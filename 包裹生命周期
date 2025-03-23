@@ -4,23 +4,29 @@
 #include <time.h>   // 提供时间相关的函数和数据类型，如time、difftime
 #include <string.h> // 提供字符串处理函数，如strcmp
 #include <windows.h> // 用于 Windows 系统下的高精度时间获取
-
+#include"redblacktree.h"
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
-
+typedef struct Goods goods;
+typedef long long ll;//LL
+static int sequence = 0;
 int generateRandomCode(void) {
     return rand() % 1000; // 生成 0 - 999 的随机数
 }
-
+RBTree* Root;
 // 生成唯一订单号
 void generateOrderNumber(char* orderNumber) {
+    // 获取当前时间
     time_t currentTime = time(NULL);
+    // 生成随机数
     int randomCode = generateRandomCode();
-    sprintf(orderNumber, "%ld%03d", currentTime, randomCode);
+    // 自增序列
+    sequence = (sequence + 1) % 1000;
+    // 格式化订单号
+    sprintf(orderNumber, "%ld%03d%03d", currentTime, randomCode, sequence);
 }
-
 // 生成四位数取件码，使用毫秒级时间
-void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
+/*void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
     ULARGE_INTEGER ui;
@@ -30,13 +36,11 @@ void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
     int msPart = milliseconds % 100;
     sprintf(pickupCode, "%c%d%02d", shelfArea, layer, msPart);
 }
-
+*/
 // 出库订单结构体
 typedef struct {
     char order_id[20];    // 订单号
-    char recipient[50];   // 收件人姓名
     char phone[15];       // 联系电话
-    char address[100];    // 配送地址
     time_t create_time;   // 订单创建时间戳
     time_t outbound_time; // 出库时间戳
     int status;           // 状态标记（0=待出库，1=已出库）
@@ -45,8 +49,7 @@ typedef struct {
 void confirm_outbound(OutboundOrder* order) {
     // 文字提示+信息显示
     printf("\n====== 出库二次确认 ======\n");
-    printf("订单号: %s\n收件人: %s\n电话: %s\n地址: %s\n",
-        order->order_id, order->recipient, order->phone, order->address);
+    printf("订单号: %s\n电话\n",order->order_id);
 
     // 确认逻辑
     char confirm;
@@ -81,15 +84,50 @@ void check_expiration(OutboundOrder* order) {
         }
     }
 }
+void GenerateOrder(RBTree*Root)
+{
+    OutboundOrder* ptr = (OutboundOrder*)malloc(sizeof(OutboundOrder));
+    if (!ptr)
+    {
+        printf("PTR hasnot enough memory");
+    }
+    generateOrderNumber(ptr->order_id);
+    RBTreeNode* tmp;
+    if (Root->root==NULL)
+        tmp = newNode((int)ptr->order_id, Root);
+    else
+        tmp = Add_node((int)ptr->order_id, Root);
+    ptr->create_time = time(NULL);
+    printf("请输入联系电话");
+    scanf_s("%s", ptr->phone);
+    ptr->status = 0;//创建时未出库
+}
+void Pickup(RBTree*Root,OutboundOrder*order)
+{
+    printf("输入你的手机号和密码\n");
+    char tel[20],mima[20];
+    scanf_s("%s", &tel);
+    if((!strcmp(tel,order->phone)))
+        confirm_outbound(order);
+}
+void Inquiry_order(RBTree* Root,char *order_id) {
+    RBTreeNode* tmp = Find_key((int)order_id, Root);
+    OutboundOrder* ptr1 = tmp->ptr;
+    printf("手机号为%s",ptr1->phone);
+    if (ptr1->status)
+        printf("货物已出库");
+    else
+        printf("货物未出库");
+}
 int main() {
     srand((int)time(NULL)); // 只设置一次随机数种子
-    char orderNumber[20];
-    generateOrderNumber(orderNumber);
-    printf("生成的订单号: %s\n", orderNumber);
-    char pickupCode[10];
-    int n = rand() % 20;
-    generatePickupCode(pickupCode, 'A', n);
-    printf("生成的取件码: %s\n", pickupCode);
-
+    Root = (RBTree*)malloc(sizeof(RBTree));
+    Root->root = NULL;
+    GenerateOrder(Root);
+    RBTreeNode* first = Root->root;
+    Pickup(Root, first->ptr);
+    Inquiry_order(Root,first->ptr);
+    Clear_RBTREE(Root->root);
+    free(Root);
     return 0;
 }
