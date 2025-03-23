@@ -1,42 +1,36 @@
-/*
- 用c语言实现用户注册时自动生成唯一订单号（时间戳+随机校验码）
- 2.包裹全生命周期管理
- 入库流程：自动生成三维取件码（货架区+层号+入库时间分钟数）//完成
- 动态库存管理：红黑树实现快速检索（订单号、手机尾号、取件码）//可以完成
- 出库防错机制：出库操作需二次确认（文字提示+屏幕显示收件人信息）
- 时效监控模块：基于时间戳的包裹生命周期管理，给我建议和实例，告诉我完成这项工作的思路是什么
- */
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdlib.h>
 #include <stdio.h>  // 提供输入输出函数，如printf、scanf、fopen、fprintf、fclose等
 #include <time.h>   // 提供时间相关的函数和数据类型，如time、difftime
 #include <string.h> // 提供字符串处理函数，如strcmp
-//#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程
-#include <unistd.h> // 提供Unix标准库函数，如sleep
-// 生成随机校验码
+#include <windows.h> // 用于 Windows 系统下的高精度时间获取
+
+//#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
+   // Windows-specific code
+
 int generateRandomCode(void) {
     return rand() % 1000; // 生成 0 - 999 的随机数
 }
- 
+
 // 生成唯一订单号
-void generateOrderNumber(char *orderNumber) {
+void generateOrderNumber(char* orderNumber) {
     time_t currentTime = time(NULL);
     int randomCode = generateRandomCode();
     sprintf(orderNumber, "%ld%03d", currentTime, randomCode);
 }
- 
+
 // 生成四位数取件码，使用毫秒级时间
-void generatePickupCode(char *pickupCode, char shelfArea, int layer) {
-    struct timespec ts;
-    // 获取当前时间，精度到纳秒
-    clock_gettime(CLOCK_REALTIME, &ts);
-    // 计算毫秒部分
-    long milliseconds = ts.tv_sec  * 1000 + ts.tv_nsec  / 1000000;
-    // 取最后两位数作为取件码的一部分
+void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    ULARGE_INTEGER ui;
+    ui.LowPart = ft.dwLowDateTime;
+    ui.HighPart = ft.dwHighDateTime;
+    long long milliseconds = (ui.QuadPart - 116444736000000000LL) / 10000;
     int msPart = milliseconds % 100;
     sprintf(pickupCode, "%c%d%02d", shelfArea, layer, msPart);
 }
- 
+
 // 出库订单结构体
 typedef struct {
     char order_id[20];    // 订单号
@@ -48,23 +42,23 @@ typedef struct {
     int status;           // 状态标记（0=待出库，1=已出库）
 } OutboundOrder;
 
-void confirm_outbound(OutboundOrder *order) {
+void confirm_outbound(OutboundOrder* order) {
     // 文字提示+信息显示
     printf("\n====== 出库二次确认 ======\n");
     printf("订单号: %s\n收件人: %s\n电话: %s\n地址: %s\n",
-          order->order_id, order->recipient, order->phone, order->address);
-    
+        order->order_id, order->recipient, order->phone, order->address);
+
     // 确认逻辑
     char confirm;
-    printf("确认出库？(Y/N): ");
     scanf(" %c", &confirm);
-    
-    if(confirm == 'Y' || confirm == 'y') {
+
+    if (confirm == 'Y' || confirm == 'y') {
         order->outbound_time = time(NULL); // 记录出库时间
         order->status = 1;
         printf("出库成功"); //
-    } else {
-       printf("出库取消");
+    }
+    else {
+        printf("出库取消");
     }
 }
 // 时间差计算（单位：小时）
@@ -72,17 +66,18 @@ double get_time_diff(time_t start, time_t end) {
     return difftime(end, start) / 3600.0;
 }
 // 包裹生命周期状态判断
-void check_expiration(OutboundOrder *order) {
+void check_expiration(OutboundOrder* order) {
     time_t now = time(NULL);
-    if(order->status == 0) { // 待出库订单
+    if (order->status == 0) { // 待出库订单
         double warehouse_hours = get_time_diff(order->create_time, now);
-        if(warehouse_hours > 48) { // 超过48小时未出库
-          printf("仓库滞留超时");
+        if (warehouse_hours > 48) { // 超过48小时未出库
+            printf("仓库滞留超时");
         }
-    } else { // 已出库订单
+    }
+    else { // 已出库订单
         double transit_hours = get_time_diff(order->outbound_time, now);
-        if(transit_hours > 72) { // 超过72小时未送达
-         printf( "运输超时");
+        if (transit_hours > 72) { // 超过72小时未送达
+            printf("运输超时");
         }
     }
 }
@@ -92,28 +87,9 @@ int main() {
     generateOrderNumber(orderNumber);
     printf("生成的订单号: %s\n", orderNumber);
     char pickupCode[10];
-    int n=rand()%20;
+    int n = rand() % 20;
     generatePickupCode(pickupCode, 'A', n);
     printf("生成的取件码: %s\n", pickupCode);
- 
+
     return 0;
 }
-/*
-typedef struct {
-    char orderNumber[20];
-    char phoneLastFour[5];
-    char pickupCode[10];
-    // 其他包裹信息
-} Package;
- 
-// 插入包裹信息到红黑树
-void insertPackage(RBTree *tree, Package *package) {
-    // 以订单号为例插入
-    Add_node((int)(package->orderNumber), tree);
-}
-// 根据订单号查找包裹信息
-Package *findPackageByOrderNumber(RBTree *tree, char *orderNumber) {
-   RBTreeNode*find=Find_key((int)orderNumber, tree);
-    return find->Package;
-}
-*/
