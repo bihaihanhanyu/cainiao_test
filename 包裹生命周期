@@ -44,7 +44,7 @@ void generateOrderNumber(char* orderNumber) {
 HashTable* ht;
 typedef struct {
     char order_id[20];    // 订单号
-    char phone[15];       // 联系电话
+    char phone[20];       // 联系电话
     time_t create_time;   // 订单创建时间戳
     time_t outbound_time; // 出库时间戳
     int status;           // 状态标记（0=待出库，1=已出库）
@@ -105,16 +105,21 @@ void GenerateOrder(RBTree* Root)
     goods* Goods = (goods*)malloc(sizeof(goods));
     ptr->Good = Goods;
     printf("请输入货物的名字和属性和重量");
-    scanf_s("%50s %d %lf",&ptr->Good->name,&ptr->Good->p_type,&ptr->Good->weight);
+    //scanf_s("%50s %d %lf", ptr->Good->name, &(ptr->Good->p_type), &(ptr->Good->weight));
+    scanf_s("%50s", ptr->Good->name, sizeof(ptr->Good->name));
+    scanf_s("%d", &(ptr->Good->p_type), sizeof(ptr->Good->p_type));
+    scanf_s("%lf", &(ptr->Good->weight),sizeof(ptr->Good->weight));
     generateOrderNumber(ptr->order_id);
     RBTreeNode* tmp;
     if (Root->root == NULL)
-        tmp = newNode((int)ptr->order_id, Root);
+        tmp = newNode(ptr->order_id, Root);
     else
-        tmp = Add_node((int)ptr->order_id, Root);
+        tmp = Add_node(ptr->order_id, Root);
+    printf("Right");
     ptr->create_time = time(NULL);
+    printf("Right");
     printf("请输入联系电话");
-    scanf_s("%20s", ptr->phone);
+    scanf_s("%s", ptr->phone,sizeof(ptr->phone));
     //把订单号放到user里面
     User* user = hash_search(ht, ptr->phone);
     if (user) {
@@ -123,8 +128,7 @@ void GenerateOrder(RBTree* Root)
     else {
         printf("未找到该用户\n");
     }
-        Add_list(user->head,ptr,user->tail,user->length);
-
+    Add_list(user->head, ptr, user->tail, user->length);
     ptr->status = 0;//创建时未出库
     Intelligent_schedule(ptr);//智能调度
     log_operation("入库",ptr->order_id, "管理员");
@@ -219,7 +223,7 @@ int main() {
     srand((int)time(NULL)); // 只设置一次随机数种子
     Root = (RBTree*)malloc(sizeof(RBTree));
     Root->root = NULL;
-    ht = hash_init(2010);
+    ht = hash_init(5301);
     GenerateOrder(Root);
     RBTreeNode* first = Root->root;
     OutboundOrder* ptr = (OutboundOrder*)first->ptr;
@@ -229,4 +233,3 @@ int main() {
     free(Root);
     return 0;
 }
-
