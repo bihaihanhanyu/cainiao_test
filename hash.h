@@ -5,6 +5,7 @@
 #include<stdio.h>
 #include <string.h>
 #include<stdlib.h>
+#include"list.h"
 struct Logistic;
 struct User;
 struct Order;
@@ -65,7 +66,16 @@ typedef struct User {//用户
     char tel[12];//还需要手机号和联系方式
     UserType u_type;//不同级别用户
     char name[30];
-    struct Order* ord;//用户未取包裹的链头
+    //struct Order* ord;//用户未取包裹的链头
+    
+    
+    
+    //初始化的时候把下面的三个指针初始化一下
+    //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
+    list* ord;//用户未取包裹的链头
+    list* head;//用户用来维护包裹链表的两个指针
+    list* tail;
+    int length;//链表的长度初始化为零
     struct User* next;
 }User;
 typedef struct HashTable {
@@ -183,10 +193,10 @@ void hash_load(HashTable* ht, const char* filename) {
     }
     fclose(fp);
 }
-struct Order {//订单
+/*struct Order {//订单
     int i;
     struct Goods* goods;
-};
+};*/
 struct Depository {//仓库
     struct Goods* store;
 };
@@ -199,7 +209,7 @@ struct Goods {//货物
    // struct Logistic* log;//物流
     //char pos[20];//货物位置
 };
-float calculateMoney(User* user, Goods* goods, float base_prise)
+float calculateMoney(User* user,struct Goods* goods, float base_prise)
 {
     float userDiscount[5] = { 0.9,0.85,0.75,0.8 };
     float packageDiscount[5] = { 1.2,1.15,1.25,0.9,1.0 };
