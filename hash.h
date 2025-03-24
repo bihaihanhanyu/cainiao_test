@@ -190,6 +190,6 @@ float calculateMoney(User* user,struct Goods* goods, float base_prise)
         weightDiscount = 2;
     UserType temp_ut = user->u_type;
     PackageType temp_pt = goods->p_type;
-    return base_prise * userDiscount[temp_ut] * packageDiscount[temp_pt];
+    return base_prise * userDiscount[temp_ut] * packageDiscount[temp_pt]*weightDiscount;
 }
 #endif
