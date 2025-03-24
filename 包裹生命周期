@@ -5,6 +5,8 @@
 #include <string.h> // 提供字符串处理函数，如strcmp
 #include <windows.h> // 用于 Windows 系统下的高精度时间获取
 #include"redblacktree.h"
+#include"hash.h"
+#include"log.h"
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
 typedef struct Goods goods;
@@ -101,6 +103,16 @@ void GenerateOrder(RBTree* Root)
     printf("请输入联系电话");
     scanf_s("%s", ptr->phone);
     ptr->status = 0;//创建时未出库
+    log_operation("入库",ptr->order_id, "管理员");
+    FILE* fp = fopen(ptr->phone, "a");
+    if (!fp)
+    {
+        perror("ERROR!");
+    }
+    fprintf(fp,"手机号为%s\t 订单号为%s\t 订单创建时间为%s",ptr->phone,ptr->order_id,ptr->create_time);
+    fclose(fp);
+    //把货物的订单指针赋给用户，用hash表
+
 }
 void Pickup(RBTree* Root, OutboundOrder* order)
 {
@@ -109,6 +121,19 @@ void Pickup(RBTree* Root, OutboundOrder* order)
     scanf_s("%s", &tel);
     if ((!strcmp(tel, order->phone)))
         confirm_outbound(order);
+    log_operation("出库", order->order_id,order->phone);
+    OutboundOrder* ptr = order;
+    FILE* fp = fopen(ptr->phone, "a");
+    if (!fp)
+    {
+        perror("ERROR!");
+    }
+    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%s", ptr->phone, ptr->order_id, ptr->outbound_time);
+    fclose(fp);
+    //删除订单
+    free(fp);
+    RBTreeNode*tmp= Find_key((int)ptr->phone,Root);
+    Delete(tmp, Root);
 }
 void Inquiry_order(RBTree* Root, char* order_id) {
     RBTreeNode* tmp = Find_key((int)order_id, Root);
