@@ -63,7 +63,7 @@ void confirm_outbound(OutboundOrder* order) {
 
     // 确认逻辑
     char confirm;
-    scanf(" %c", &confirm);
+    scanf_s(" %c", &confirm);
 
     if (confirm == 'Y' || confirm == 'y') {
         order->outbound_time = time(NULL); // 记录出库时间
@@ -79,6 +79,7 @@ double get_time_diff(time_t start, time_t end) {
     return difftime(end, start) / 3600.0;
 }
 // 包裹生命周期状态判断
+void Intelligent_schedule(OutboundOrder* order);//智能调度
 void check_expiration(OutboundOrder* order) {
     time_t now = time(NULL);
     if (order->status == 0) { // 待出库订单
@@ -202,8 +203,8 @@ void Pickup(RBTree* Root, OutboundOrder* order)
     Delete_list(tmp, user->head, user->tail, user->length);
     free(order->Good);
     free(fp);
-    RBTreeNode*tmp= Find_key((int)ptr->phone,Root);
-    Delete(tmp, Root);
+    RBTreeNode*ntmp= Find_key((int)ptr->phone,Root);
+    Delete(ntmp, Root);
 }
 void Inquiry_order(RBTree* Root, char* order_id) {
     RBTreeNode* tmp = Find_key((int)order_id, Root);
