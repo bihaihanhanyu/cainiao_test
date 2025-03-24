@@ -9,7 +9,6 @@
 struct Logistic;
 struct User;
 struct Order;
-struct Depository;
 /**
  需要实现的功能
  更新物流的链表
@@ -24,29 +23,6 @@ struct Depository;
  领或冒锈、拒收
 
  */
-struct Logistic {//物流管理
-    int num;//初始化，经过的地点
-    double stage_time[20];//阶段性的时间
-    char* stage_pos[20];//阶段性的地点
-};
-static struct Logistic* Add_Logistic(struct Logistic* log)//链表实现物流的进度增加
-{
-    //...实现
-    struct Logistic* nlog = log;
-    return nlog;
-}
-void Show_Logistic(struct Logistic* log)//输出每一项的地点和对应的时间
-{
-    for (int i = 0; i < log->num; i++) {
-        printf("%s", log->stage_pos[i]);
-        printf("(");
-        printf("%.2f", log->stage_time[i]);
-        printf(")");
-        if (i != log->num - 1)
-            printf("->");
-    }
-
-}
 typedef enum UserType {
     STUDENT,    // 学生 0.9 
     TEACHER,    // 教师 0.85 
@@ -67,9 +43,6 @@ typedef struct User {//用户
     UserType u_type;//不同级别用户
     char name[30];
     //struct Order* ord;//用户未取包裹的链头
-    
-    
-    
     //初始化的时候把下面的三个指针初始化一下
     //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
     list* ord;//用户未取包裹的链头
@@ -102,7 +75,6 @@ HashTable* hash_init(int size) {
 void hash_insert(HashTable* ht, const char* phone, const char* name, const UserType  type) {
     unsigned int index = hash_func(phone, ht->size);
     User* node = ht->buckets[index];
-
     // 检查手机号是否已存在 
     while (node) {
         if (strcmp(node->tel, phone) == 0) {
@@ -111,12 +83,14 @@ void hash_insert(HashTable* ht, const char* phone, const char* name, const UserT
         }
         node = node->next;
     }
-
     // 创建新节点（头插法）
     User* new_node = (User*)malloc(sizeof(User));
     strcpy(new_node->tel, phone);
     strcpy(new_node->name, name);
     new_node->u_type = type;
+    new_node->head = (list*)malloc(sizeof(list));
+    new_node->tail = new_node->ord = new_node->head->next = NULL;
+    new_node->length = 0;
     if (type == VIP) {
         new_node->next = ht->buckets[index];
         ht->buckets[index] = new_node;
@@ -161,6 +135,7 @@ int hash_delete(HashTable* ht, const char* phone) {
             else {
                 ht->buckets[index] = curr->next;
             }
+            free(curr->head);
             free(curr);
             ht->count--;
             return 1;
@@ -193,16 +168,7 @@ void hash_load(HashTable* ht, const char* filename) {
     }
     fclose(fp);
 }
-/*struct Order {//订单
-    int i;
-    struct Goods* goods;
-};*/
-struct Depository {//仓库
-    struct Goods* store;
-};
 struct Goods {//货物
-   // char withdraw_code[20];//取货码
-   // char ref[20];//编码
     char name[50];//名字
     PackageType p_type;
     double weight;//重量，kg
@@ -217,23 +183,13 @@ float calculateMoney(User* user,struct Goods* goods, float base_prise)
     if (goods->weight < 1) 
         weightDiscount = 1;
     else if (goods->weight < 5) 
-        weightDiscount = 0.95;
+        weightDiscount = 1.2;
     else if (goods->weight < 10)
-        weightDiscount = 0.9;
+        weightDiscount = 1.5;
     else 
-        weightDiscount = 0.8;
+        weightDiscount = 2;
     UserType temp_ut = user->u_type;
     PackageType temp_pt = goods->p_type;
     return base_prise * userDiscount[temp_ut] * packageDiscount[temp_pt];
 }
-struct Flash_Bird {
-    //用户管理，包裹相关的出库，入库，查询，异常的管理
-    //驿站的库存盘点，预警，货架处理（包裹存放位置和对应的取件码）
-    //取件通知和寄件提醒的管理，实现包裹的收，存，发的全流程管理
-
-
-
-
-};
-typedef  struct Flash_Bird fbird;
 #endif
