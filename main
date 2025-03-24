@@ -1,159 +1,94 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <stdlib.h>
-#include <stdio.h>  // 提供输入输出函数，如printf、scanf、fopen、fprintf、fclose等
-#include <time.h>   // 提供时间相关的函数和数据类型，如time、difftime
-#include <string.h> // 提供字符串处理函数，如strcmp
-#include <windows.h> // 用于 Windows 系统下的高精度时间获取
-#include"redblacktree.h"
-#include"hash.h"
-#include"log.h"
-//#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
-   // Windows-specific code
-typedef struct Goods goods;
-typedef long long ll;//LL
-static int sequence = 0;
-int generateRandomCode(void) {
-    return rand() % 1000; // 生成 0 - 999 的随机数
-}
-RBTree* Root;
-// 生成唯一订单号
-void generateOrderNumber(char* orderNumber) {
-    // 获取当前时间
-    time_t currentTime = time(NULL);
-    // 生成随机数
-    int randomCode = generateRandomCode();
-    // 自增序列
-    sequence = (sequence + 1) % 1000;
-    // 格式化订单号
-    sprintf(orderNumber, "%ld%03d%03d", currentTime, randomCode, sequence);
-}
-// 生成四位数取件码，使用毫秒级时间
-/*void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    ULARGE_INTEGER ui;
-    ui.LowPart = ft.dwLowDateTime;
-    ui.HighPart = ft.dwHighDateTime;
-    long long milliseconds = (ui.QuadPart - 116444736000000000LL) / 10000;
-    int msPart = milliseconds % 100;
-    sprintf(pickupCode, "%c%d%02d", shelfArea, layer, msPart);
-}
-*/
-// 出库订单结构体
-typedef struct {
-    char order_id[20];    // 订单号
-    char phone[15];       // 联系电话
-    time_t create_time;   // 订单创建时间戳
-    time_t outbound_time; // 出库时间戳
-    int status;           // 状态标记（0=待出库，1=已出库）
-} OutboundOrder;
+#include<stdio.h>
 
-void confirm_outbound(OutboundOrder* order) {
-    // 文字提示+信息显示
-    printf("\n====== 出库二次确认 ======\n");
-    printf("订单号: %s\n电话\n", order->order_id);
-
-    // 确认逻辑
-    char confirm;
-    scanf(" %c", &confirm);
-
-    if (confirm == 'Y' || confirm == 'y') {
-        order->outbound_time = time(NULL); // 记录出库时间
-        order->status = 1;
-        printf("出库成功"); //
-    }
-    else {
-        printf("出库取消");
-    }
-}
-// 时间差计算（单位：小时）
-double get_time_diff(time_t start, time_t end) {
-    return difftime(end, start) / 3600.0;
-}
-// 包裹生命周期状态判断
-void check_expiration(OutboundOrder* order) {
-    time_t now = time(NULL);
-    if (order->status == 0) { // 待出库订单
-        double warehouse_hours = get_time_diff(order->create_time, now);
-        if (warehouse_hours > 48) { // 超过48小时未出库
-            printf("仓库滞留超时");
-        }
-    }
-    else { // 已出库订单
-        double transit_hours = get_time_diff(order->outbound_time, now);
-        if (transit_hours > 72) { // 超过72小时未送达
-            printf("运输超时");
-        }
-    }
-}
-void GenerateOrder(RBTree* Root)
+//错取，库存预警提醒取件，损坏，丢失，拒收
+int main()
 {
-    OutboundOrder* ptr = (OutboundOrder*)malloc(sizeof(OutboundOrder));
-    if (!ptr)
-    {
-        printf("PTR hasnot enough memory");
-    }
-    generateOrderNumber(ptr->order_id);
-    RBTreeNode* tmp;
-    if (Root->root == NULL)
-        tmp = newNode((int)ptr->order_id, Root);
-    else
-        tmp = Add_node((int)ptr->order_id, Root);
-    ptr->create_time = time(NULL);
-    printf("请输入联系电话");
-    scanf_s("%s", ptr->phone);
-    ptr->status = 0;//创建时未出库
-    log_operation("入库",ptr->order_id, "管理员");
-    FILE* fp = fopen(ptr->phone, "a");
-    if (!fp)
-    {
-        perror("ERROR!");
-    }
-    fprintf(fp,"手机号为%s\t 订单号为%s\t 订单创建时间为%s",ptr->phone,ptr->order_id,ptr->create_time);
-    fclose(fp);
-    //把货物的订单指针赋给用户，用hash表
+	printf("------ 菜鸟驿站系统 ------");
+	printf("1. 用户登录");
+	printf("2. 管理员登录");
+	printf("3. 退出");
+	printf("--------------------------");
+	char x;
+	x = getchar();
+	while (x != '3')
+	{
+		x = getchar();
+		if (x == '1')
+		{
+			//用户的取件，寄件，查询
+			printf("请输入您的手机号码");
+			int ttel[12];
+			scanf("%d", ttel);
+			if (finduser(ttel))//查找用户，若找到则返回其结构体指针
+			{
+				user* t_user = finduser(ttel);
+				printf("1.取件    2.寄件    3.查询     4.退出");
+				int opera;
+				scanf("%d", &opera);
+				if (opera == 4)
+				{
+					break;
+				}
+				while (opera != 4)
+				{
+					if (opera == 1)
+					{
+						pickup(t_user);//取件
+					}
+					else if (opera == 2)
+					{
+						send(t_user);//寄件
+					}
+					else
+						check(t_user);//查询包裹
+				}
+					
+			}
+			else
+			{
+				printf("用户不存在！");
+					break;
+			}
 
-}
-void Pickup(RBTree* Root, OutboundOrder* order)
-{
-    printf("输入你的手机号和密码\n");
-    char tel[20], mima[20];
-    scanf_s("%s", &tel);
-    if ((!strcmp(tel, order->phone)))
-        confirm_outbound(order);
-    log_operation("出库", order->order_id,order->phone);
-    OutboundOrder* ptr = order;
-    FILE* fp = fopen(ptr->phone, "a");
-    if (!fp)
-    {
-        perror("ERROR!");
-    }
-    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%s", ptr->phone, ptr->order_id, ptr->outbound_time);
-    fclose(fp);
-    //删除订单
-    free(fp);
-    RBTreeNode*tmp= Find_key((int)ptr->phone,Root);
-    Delete(tmp, Root);
-}
-void Inquiry_order(RBTree* Root, char* order_id) {
-    RBTreeNode* tmp = Find_key((int)order_id, Root);
-    OutboundOrder* ptr1 =(OutboundOrder*) tmp->ptr;
-    printf("手机号为%s", ptr1->phone);
-    if (ptr1->status)
-        printf("货物已出库");
-    else
-        printf("货物未出库");
-}
-int main() {
-    srand((int)time(NULL)); // 只设置一次随机数种子
-    Root = (RBTree*)malloc(sizeof(RBTree));
-    Root->root = NULL;
-    GenerateOrder(Root);
-    RBTreeNode* first = Root->root;
-    OutboundOrder* ptr = (OutboundOrder*)first->ptr;
-    Pickup(Root,ptr);
-    Inquiry_order(Root, ptr->order_id);
-    Clear_RBTREE(Root->root);
-    free(Root);
-    return 0;
+
+		}
+		else if (x == 2)//管理员操作
+		{
+			printf("请输入您的账号");
+			int t_acount[12];
+			scanf("%d", t_acount);
+			printf("请输入密码");
+			char t_passworld[20];
+			scanf("%s", t_passworld);
+			adm* t_adm;         //登陆操作
+			if (t_adm = find(t_acount) && !strcmp(t_passworld, t_adm->passworld))
+			{
+				printf("登录成功！");
+				printf("1.入库  2.库存盘点 3.退出");
+				int op;
+				scanf("%d", op);
+				if (op == 3)break;
+				while (op != 3)
+				{
+					if (op==1)
+					{
+						store();//入库
+					}
+					else
+					{
+						checkup();//库存查询
+					}
+					scanf("%d", op);
+				}
+
+
+			}
+			else
+				printf("账户或密码错误");
+		}
+
+
+	}
+
+	return 0;
 }
