@@ -3,7 +3,7 @@
 #include<stdlib.h>
 typedef enum { BLACK, RED }Color;
 typedef struct RBTreeNode {//红黑树节点
-    int key;
+    char *key;
     Color color;            // 节点颜色（RED/BLACK）
     struct RBTreeNode* left;  // 左子节点指针
     struct RBTreeNode* right; // 右子节点指针
@@ -107,7 +107,7 @@ void LR(RBTree* Root, RBTreeNode* cur)//对LR情况的旋转
     cur->right = grandpa;
     grandpa->parent = cur;
 }
-RBTreeNode* newNode(int key,RBTree*Root)
+RBTreeNode* newNode(char* key, RBTree* Root)
 {
     RBTreeNode* tmp = (RBTreeNode*)malloc(sizeof(RBTreeNode));
     if (tmp == NULL)
@@ -179,7 +179,7 @@ RBTree* fixInsert(RBTree* Root, RBTreeNode* cur)//Root->root是根结点
 
 }
 //加入新节点
-RBTreeNode* Add_node(int key, RBTree* Root)
+RBTreeNode* Add_node(char* key, RBTree* Root)
 {
     RBTreeNode* head = Root->root;//红黑树的根节点
     RBTreeNode* trace = head;
@@ -193,7 +193,7 @@ RBTreeNode* Add_node(int key, RBTree* Root)
     cur->color = RED;
     cur->left = cur->right = NULL;
     while (1) {
-        if (key > trace->key) {
+        if (strcmp(key,trace->key)) {
             if (trace->right != NULL)
                 trace = trace->right;
             else {
@@ -217,17 +217,17 @@ RBTreeNode* Add_node(int key, RBTree* Root)
 //三种遍历方法  先序遍历  中序遍历    后序遍历
 void  Pre_order(RBTreeNode* root)//先序遍历   根左右
 {
-    printf(" %d", root->key);
+    //printf(" %d", root->key);
     if (root->left != NULL)
-        Pre_order(root->left);
+       Pre_order(root->left);
     if (root->right != NULL)
-        Pre_order(root->right);
+       Pre_order(root->right);
 }
 void In_order(RBTreeNode* root)//中序遍历   左根右
 {
     if (root->left != NULL)
         In_order(root->left);
-    printf(" %d", root->key);
+  //  printf(" %d", root->key);
     if (root->right != NULL)
         In_order(root->right);
 }
@@ -237,7 +237,7 @@ void Post_order(RBTreeNode* root)//后序遍历 左右根
         Post_order(root->left);
     if (root->right != NULL)
         Post_order(root->right);
-    printf(" %d", root->key);
+  //  printf(" %d", root->key);
 }
 //红黑树的删除源于二叉搜索树的删除
 //左右子树都有，用他左子树中的最大值或右子树的最小值代替他
@@ -461,13 +461,13 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
         }
     }
 }
-RBTreeNode* Find_key(int key, RBTree* Root)//查找key值所对应的节点坐标
+RBTreeNode* Find_key(char* key, RBTree* Root)//查找key值所对应的节点坐标
 //返回NULL就代表这个红黑树里面没有这个内容
 {
     RBTreeNode* cur = Root->root;
-    while (cur != NULL && cur->key != key)
+    while (cur != NULL && !strcmp(cur->key,key))
     {
-        if (cur->key > key)
+        if (strcmp(cur->key, key))
             cur = cur->left;
         else cur = cur->right;
     }
