@@ -105,7 +105,7 @@ void GenerateOrder(RBTree* Root)
     goods* Goods = (goods*)malloc(sizeof(goods));
     ptr->Good = Goods;
     printf("请输入货物的名字和属性和重量");
-    scanf_s("%s %d %lf",&ptr->Good->name,&ptr->Good->p_type,&ptr->Good->weight);
+    scanf_s("%50s %d %lf",&ptr->Good->name,&ptr->Good->p_type,&ptr->Good->weight);
     generateOrderNumber(ptr->order_id);
     RBTreeNode* tmp;
     if (Root->root == NULL)
@@ -114,7 +114,7 @@ void GenerateOrder(RBTree* Root)
         tmp = Add_node((int)ptr->order_id, Root);
     ptr->create_time = time(NULL);
     printf("请输入联系电话");
-    scanf_s("%s", ptr->phone);
+    scanf_s("%20s", ptr->phone);
     //把订单号放到user里面
     User* user = hash_search(ht, ptr->phone);
     if (user) {
