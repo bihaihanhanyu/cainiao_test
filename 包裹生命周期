@@ -7,6 +7,7 @@
 #include"redblacktree.h"
 #include"hash.h"
 #include"log.h"
+#include"list.h"
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
 typedef struct Goods goods;
@@ -46,8 +47,14 @@ typedef struct {
     time_t create_time;   // 订单创建时间戳
     time_t outbound_time; // 出库时间戳
     int status;           // 状态标记（0=待出库，1=已出库）
+    goods* Good;//货物订单
+    char shelf[6];//货物柜
 } OutboundOrder;
-
+typedef struct {
+    int num[10];//num最多到3000 对A B C D E F 每个柜子进行维护
+    char ch;//ch可以在A到F 1 2 3 4 5 6
+}Intelligent_schedule_number;
+Intelligent_schedule_number NUM;
 void confirm_outbound(OutboundOrder* order) {
     // 文字提示+信息显示
     printf("\n====== 出库二次确认 ======\n");
@@ -93,6 +100,10 @@ void GenerateOrder(RBTree* Root)
     {
         printf("PTR hasnot enough memory");
     }
+    goods* Goods = (goods*)malloc(sizeof(goods));
+    ptr->Good = Goods;
+    printf("请输入货物的名字和属性和重量");
+    scanf_s("%s %d %lf",&ptr->Good->name,&ptr->Good->p_type,&ptr->Good->weight);
     generateOrderNumber(ptr->order_id);
     RBTreeNode* tmp;
     if (Root->root == NULL)
@@ -103,16 +114,67 @@ void GenerateOrder(RBTree* Root)
     printf("请输入联系电话");
     scanf_s("%s", ptr->phone);
     ptr->status = 0;//创建时未出库
+    Intelligent_schedule(ptr);//智能调度
     log_operation("入库",ptr->order_id, "管理员");
     FILE* fp = fopen(ptr->phone, "a");
     if (!fp)
     {
         perror("ERROR!");
     }
-    fprintf(fp,"手机号为%s\t 订单号为%s\t 订单创建时间为%s",ptr->phone,ptr->order_id,ptr->create_time);
+    fprintf(fp,"手机号为%s\t 订单号为%s\t 订单创建时间为%s\t 货物的名字为%s\t 属性为%d\t 货物柜为%s\t 货物重量为%lf\n",
+        ptr->phone,ptr->order_id,ptr->create_time,ptr->Good->name,ptr->Good->p_type,ptr->shelf,ptr->Good->weight);
     fclose(fp);
     //把货物的订单指针赋给用户，用hash表
+    //不会 
+    //  ^_^ 尴尬的笑（看出来了吗）
+    //拜托徐哥写了
 
+
+
+
+
+
+
+
+
+
+}
+void Intelligent_schedule(OutboundOrder*order)//智能调度
+{
+    char ch;
+    switch (order->Good->p_type) {
+    case 1:
+        ch = 'A';
+        break;
+    case 2:
+        ch = 'B';
+        break;
+    case 3:
+        ch = 'C';
+        break;
+    case 4:
+        ch = 'D';
+        break;
+    case 5:
+        int n = rand() % 2;
+        if (n)//普通
+            ch = 'E';
+        else ch = 'F';
+        break;
+    }
+    int n = ch - 'A';
+    if (NUM.num[n] == 3000)
+       NUM.num[n] = 0;
+    int i = NUM.num[n];
+        char* shelf = order->shelf;
+        shelf[0] = ch;
+        shelf[1] = '0' + i / 1000;
+        i %= 1000;
+        shelf[2] = '0' + i / 100;
+        i % 100;
+        shelf[3] = '0' + i / 10;
+        i %= 10;
+        shelf[4] = '0' + i;
 }
 void Pickup(RBTree* Root, OutboundOrder* order)
 {
@@ -128,9 +190,10 @@ void Pickup(RBTree* Root, OutboundOrder* order)
     {
         perror("ERROR!");
     }
-    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%s", ptr->phone, ptr->order_id, ptr->outbound_time);
+    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%s\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time,ptr->Good->name,ptr->Good->p_type);
     fclose(fp);
     //删除订单
+    free(order->Good);
     free(fp);
     RBTreeNode*tmp= Find_key((int)ptr->phone,Root);
     Delete(tmp, Root);
