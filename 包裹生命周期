@@ -139,6 +139,7 @@ void GenerateOrder(RBTree* Root)
 void Intelligent_schedule(OutboundOrder*order)//智能调度
 {
     char ch;
+    int k = 0;
     switch (order->Good->p_type) {
     case 1:
         ch = 'A';
@@ -153,8 +154,8 @@ void Intelligent_schedule(OutboundOrder*order)//智能调度
         ch = 'D';
         break;
     case 5:
-        int n = rand() % 2;
-        if (n)//普通
+         k = rand() % 2;
+        if (k)//普通
             ch = 'E';
         else ch = 'F';
         break;
@@ -227,3 +228,4 @@ int main() {
     free(Root);
     return 0;
 }
+
