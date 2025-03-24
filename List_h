@@ -5,6 +5,7 @@
 #include<string.h>
 #include<stdlib.h>
 #include<errno.h>
+
 typedef struct  List list;
 struct List {
     char mark[20];
@@ -12,7 +13,7 @@ struct List {
     list* pre;//前一项
     list* next;//后一项
 };
-static void Isolate_list(list* temp);
+static void Isolate_list(list* temp, list* tail);
 //type 1 第2种链表,head不存内容
 void Add_list(list*head,void*ndata,list*tail,int length)//尾插法
 {
@@ -76,7 +77,7 @@ void Insert_list01(list* prev, list* temp,list*tail)//第一种插入方法
     temp->pre = prev;
 
 }
-void Insert_list02(list* prev, int ndata)//第二种插入方法//可以用它来实现头插法
+void Insert_list02(list* prev, int ndata,int length,list*tail)//第二种插入方法//可以用它来实现头插法
 {//prev插入位置前一项的指针  data是新生成的链表的data域
     list* temp = (list*)malloc(sizeof(list));
     temp->data = ndata;
