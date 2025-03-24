@@ -7,7 +7,7 @@
 #include"redblacktree.h"
 #include"hash.h"
 #include"log.h"
-#include"list.h"
+//#include"list.h"
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
 typedef struct Goods goods;
@@ -41,6 +41,7 @@ void generateOrderNumber(char* orderNumber) {
 }
 */
 // 出库订单结构体
+HashTable* ht;
 typedef struct {
     char order_id[20];    // 订单号
     char phone[15];       // 联系电话
@@ -113,6 +114,16 @@ void GenerateOrder(RBTree* Root)
     ptr->create_time = time(NULL);
     printf("请输入联系电话");
     scanf_s("%s", ptr->phone);
+    //把订单号放到user里面
+    User* user = hash_search(ht, ptr->phone);
+    if (user) {
+        printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
+    }
+    else {
+        printf("未找到该用户\n");
+    }
+        Add_list(user->head,ptr,user->tail,user->length);
+
     ptr->status = 0;//创建时未出库
     Intelligent_schedule(ptr);//智能调度
     log_operation("入库",ptr->order_id, "管理员");
@@ -124,20 +135,6 @@ void GenerateOrder(RBTree* Root)
     fprintf(fp,"手机号为%s\t 订单号为%s\t 订单创建时间为%s\t 货物的名字为%s\t 属性为%d\t 货物柜为%s\t 货物重量为%lf\n",
         ptr->phone,ptr->order_id,ptr->create_time,ptr->Good->name,ptr->Good->p_type,ptr->shelf,ptr->Good->weight);
     fclose(fp);
-    //把货物的订单指针赋给用户，用hash表
-    //不会 
-    //  ^_^ 尴尬的笑（看出来了吗）
-    //拜托徐哥写了
-
-
-
-
-
-
-
-
-
-
 }
 void Intelligent_schedule(OutboundOrder*order)//智能调度
 {
@@ -192,7 +189,16 @@ void Pickup(RBTree* Root, OutboundOrder* order)
     }
     fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%s\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time,ptr->Good->name,ptr->Good->p_type);
     fclose(fp);
+    User* user = hash_search(ht, ptr->phone);
+    if (user) {
+        printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
+    }
+    else {
+        printf("未找到该用户\n");
+    }
     //删除订单
+    list* tmp = Find_char_list(ptr->order_id, user->head);
+    Delete_list(tmp, user->head, user->tail, user->length);
     free(order->Good);
     free(fp);
     RBTreeNode*tmp= Find_key((int)ptr->phone,Root);
@@ -211,6 +217,7 @@ int main() {
     srand((int)time(NULL)); // 只设置一次随机数种子
     Root = (RBTree*)malloc(sizeof(RBTree));
     Root->root = NULL;
+    ht = hash_init(2010);
     GenerateOrder(Root);
     RBTreeNode* first = Root->root;
     OutboundOrder* ptr = (OutboundOrder*)first->ptr;
