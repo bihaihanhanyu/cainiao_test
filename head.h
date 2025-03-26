@@ -40,7 +40,7 @@ typedef struct {
     time_t outbound_time; // 出库时间戳
     int status;           // 状态标记（0=待出库，1=已出库）
     goods* Good;//货物订单
-    
+
 } OutboundOrder;
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
@@ -53,10 +53,10 @@ struct List {
 };
 static void Isolate_list(list* temp, list* tail);
 //type 1 第2种链表,head不存内容
-void Add_list( list**head, OutboundOrder** ndata, list** tail, int* length)//尾插法
+void Add_list(list** head, OutboundOrder** ndata, list** tail, int* length)//尾插法
 {
     list* temp = (list*)malloc(sizeof(list));
-    strcpy(temp->mark,(*ndata)->order_id);
+    strcpy(temp->mark, (*ndata)->order_id);
     temp->data = *ndata;
     temp->next = NULL;
     temp->pre = NULL;
@@ -76,27 +76,27 @@ list* Find_list(list* head, int num)//返回第num个链表的位置
     for (int i = 0; i < num; i++) temp = temp->next;
     return temp;
 }
-void Delete_list(list* p, list* head, list* tail, int* length)
+void Delete_list(list** p, list** head, list** tail, int* length)
 {
-    if (p == head)
+    if (*p == *head)
         printf("You cannot delete head ptr.", errno);
     if (*length == 1)
-        head->next = tail = NULL;
+       (*head)->next = (*tail) = NULL;
     else
     {
-        if (p->next)
+        if ((*p)->next)
         {
-            p->next->pre = p->pre;
-            p->pre->next = p->next;
+            (*p)->next->pre = (*p)->pre;
+            (*p)->pre->next = (*p)->next;
         }
         else
         {
-            tail = p->pre;
-            p->pre->next = NULL;
+            *tail = (*p)->pre;
+            (*p)->pre->next = NULL;
         }
     }
-    *length--;
-    free(p);
+    (*length)-=1;
+    free(*p);
 }
 void Insert_list01(list* prev, list* temp, list* tail)//第一种插入方法
 {//prev插入位置前一项的指针  temp是要进行插入操作的指针
@@ -271,7 +271,7 @@ void hash_insert(HashTable* ht, const char* phone, const char* name, const UserT
     strcpy(new_node->name, name);
     new_node->u_type = type;
     new_node->head = (list*)malloc(sizeof(list));
-    new_node->tail= new_node->head->next = NULL;
+    new_node->tail = new_node->head->next = NULL;
     new_node->length = 0;
     if (type == VIP) {
         new_node->next = ht->buckets[index];
@@ -434,14 +434,14 @@ typedef struct double_black {
 //创建红黑树
 //创建的是根结点
 //下面的四种LL,RR,RK,LR是针对插入新节点的状况的插入策略，和颜色改变策略
-void LL(RBTree* Root, RBTreeNode* cur)//对LL情况的旋转
+void LL(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
     father->color = BLACK;
     grandpa->color = RED;
-    if (grandpa == Root->root)//处理grandpa之前的情况
-        Root->root = father;
+    if (grandpa == (*Root)->root)//处理grandpa之前的情况
+        (*Root)->root = father;
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -457,14 +457,14 @@ void LL(RBTree* Root, RBTreeNode* cur)//对LL情况的旋转
     father->right = grandpa;
     grandpa->parent = father;
 }
-void RR(RBTree* Root, RBTreeNode* cur)//对RR情况的旋转
+void RR(RBTree** Root, RBTreeNode** cur)//对RR情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
     father->color = BLACK;
     grandpa->color = RED;
-    if (grandpa == Root->root)//处理grandpa之前的情况
-        Root->root = father;
+    if (grandpa == (*Root)->root)//处理grandpa之前的情况
+        (*Root)->root = father;
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -480,53 +480,53 @@ void RR(RBTree* Root, RBTreeNode* cur)//对RR情况的旋转
     father->left = grandpa;
     grandpa->parent = father;
 }
-void RL(RBTree* Root, RBTreeNode* cur)//对RL情况的旋转
+void RL(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    cur->color = BLACK;
+    (*cur)->color = BLACK;
     grandpa->color = RED;
-    cur->right = father;
-    father->parent = cur;
+    (*cur)->right = father;
+    father->parent = (*cur);
     father->left = NULL;
-    if (grandpa == Root->root)
-        Root->root = cur;
+    if (grandpa == (*Root)->root)
+        (*Root)->root = *cur;
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
-            grand_fa->right = cur;
-        else grand_fa->left = cur;
-        cur->parent = grand_fa;
+            grand_fa->right = *cur;
+        else grand_fa->left = *cur;
+        (*cur)->parent = grand_fa;
     }
-    cur->left = grandpa;
-    grandpa->parent = cur;
+    (*cur)->left = grandpa;
+    grandpa->parent = *cur;
     grandpa->right = NULL;
 }
-void LR(RBTree* Root, RBTreeNode* cur)//对LR情况的旋转
+void LR(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    cur->color = BLACK;
+    (*cur)->color = BLACK;
     grandpa->color = RED;
-    cur->left = father;
-    father->parent = cur;
+    (*cur)->left = father;
+    father->parent = *cur;
     father->right = NULL;
-    if (grandpa == Root->root)
-        Root->root = cur;
+    if (grandpa == (*Root)->root)
+        (*Root)->root = *cur;
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
-            grand_fa->right = cur;
-        else grand_fa->left = cur;
-        cur->parent = grand_fa;
+            grand_fa->right = *cur;
+        else grand_fa->left = *cur;
+        (*cur)->parent = grand_fa;
     }
-    cur->right = grandpa;
-    grandpa->parent = cur;
+    (*cur)->right = grandpa;
+    grandpa->parent =*cur;
     grandpa->left = NULL;
 }
-RBTreeNode* newNode(char* key, RBTree** Root, RBTreeNode* tmp,OutboundOrder*ptr)
+RBTreeNode* newNode(char* key, RBTree** Root, RBTreeNode* tmp, OutboundOrder* ptr)
 {
     (*Root)->root = tmp;
     strcpy(tmp->key, key);
@@ -539,7 +539,7 @@ RBTreeNode* newNode(char* key, RBTree** Root, RBTreeNode* tmp,OutboundOrder*ptr)
 RBTree* fixInsert(RBTree** Root, RBTreeNode* cur)//Root->root是根结点
 {
     //插入新节点默认为红节点，如果违反问题一定只有根黑，和红红两种情况
-    if (cur ==(*Root)->root)//根黑
+    if (cur == (*Root)->root)//根黑
     {
         cur->color = BLACK;
         return *Root;
@@ -593,7 +593,7 @@ RBTree* fixInsert(RBTree** Root, RBTreeNode* cur)//Root->root是根结点
 
 }
 //加入新节点
-RBTreeNode* Add_node(char* key, RBTree** Root,RBTreeNode*cur,OutboundOrder*ptr)
+RBTreeNode* Add_node(char* key, RBTree** Root, RBTreeNode* cur, OutboundOrder* ptr)
 {
     RBTreeNode* head = (*Root)->root;//红黑树的根节点
     RBTreeNode* trace = head;
@@ -669,12 +669,12 @@ void Post_order(RBTreeNode* root)//后序遍历 左右根
 //  ➔ 保持双黑继续调整
 //下面的四个RR1，LL1，RL1，LR1是针对处理双黑节点的旋转方法
 //因为我们在处理双黑节点的部分和处理插入新节点的颜色的改变原理不同
-void LL1(RBTree* Root, RBTreeNode* cur)//对LL情况的旋转
+void LL1(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    if (grandpa == Root->root)//处理grandpa之前的情况
-        Root->root = father;
+    if (grandpa == (*Root)->root)//处理grandpa之前的情况
+        (*Root)->root = father;
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -690,12 +690,12 @@ void LL1(RBTree* Root, RBTreeNode* cur)//对LL情况的旋转
     father->right = grandpa;
     grandpa->parent = father;
 }
-void RR1(RBTree* Root, RBTreeNode* cur)//对RR情况的旋转
+void RR1(RBTree** Root, RBTreeNode** cur)//对RR情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    if (grandpa == Root->root)//处理grandpa之前的情况
-        Root->root = father;
+    if (grandpa ==(*Root)->root)//处理grandpa之前的情况
+        (*Root)->root = father;
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -711,54 +711,54 @@ void RR1(RBTree* Root, RBTreeNode* cur)//对RR情况的旋转
     father->left = grandpa;
     grandpa->parent = father;
 }
-void RL1(RBTree* Root, RBTreeNode* cur)//对RL情况的旋转
+void RL1(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    cur->right = father;
-    father->parent = cur;
-    if (grandpa == Root->root)
-        Root->root = cur;
+    (*cur)->right = father;
+    father->parent = *cur;
+    if (grandpa == (*Root)->root)
+        (*Root)->root = *cur;
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
-            grand_fa->right = cur;
-        else grand_fa->left = cur;
-        cur->parent = grand_fa;
+            grand_fa->right = *cur;
+        else grand_fa->left = *cur;
+        (*cur)->parent = grand_fa;
     }
-    cur->left = grandpa;
-    grandpa->parent = cur;
+    (*cur)->left = grandpa;
+    grandpa->parent = *cur;
 }
-void LR1(RBTree* Root, RBTreeNode* cur)//对LR情况的旋转
+void LR1(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
 {
-    RBTreeNode* father = cur->parent;
+    RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
-    cur->left = father;
-    father->parent = cur;
-    if (grandpa == Root->root)
-        Root->root = cur;
+    (*cur)->left = father;
+    father->parent = *cur;
+    if (grandpa == (*Root)->root)
+        (*Root)->root = *cur;
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
             grand_fa->right = cur;
         else grand_fa->left = cur;
-        cur->parent = grand_fa;
+        (*cur)->parent = grand_fa;
     }
-    cur->right = grandpa;
-    grandpa->parent = cur;
+    (*cur)->right = grandpa;
+    grandpa->parent = *cur;
 }
 //处理双黑节点的函数
-void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
+void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
 //mark==1 代表这个节点最后是要被删掉的
 //mark==0 代表这个节点是从下面传上来的
 {
     //cur是目标删除节点
-    RBTreeNode* cur = Point->point;
-    if (cur == Root->root || cur->color == RED)
+    RBTreeNode* cur = (*Point)->point;
+    if (cur == (*Root)->root || cur->color == RED)
     {
-        free(Point);
+        free(*Point);
         cur->color = BLACK;
         return;
     }
@@ -774,8 +774,8 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
         //朝着双黑方向旋转调整
         //一共只有两种情况
         //准备工作
-        if (Root->root == father)
-            Root->root = siblings;
+        if ((*Root)->root == father)
+            (*Root)->root = siblings;
         else {
             RBTreeNode* grandpa = father->parent;
             if (grandpa->left == father)
@@ -805,7 +805,7 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
         RBTreeNode* Red;//红孩子
         if ((siblings->left != NULL && siblings->left->color == RED) || (siblings->right != NULL && siblings->right->color == RED))
         {
-            free(Point);
+            free(*Point);
             //用 父亲，兄弟和他的红孩子判断是RR LL RL LR的哪一种
             //LL/RR型：r变s，s变p，p变黑 + 旋转（双黑变单黑)
             //LR/RL型：r变p，p变黑 + 旋转
@@ -818,14 +818,14 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
                     Red->color = BLACK;
                     siblings->color = father->color;
                     father->color = BLACK;
-                    LL1(Root, Red);
+                    LL1(&Root, &Red);
                 }
                 else
                 {//LR
                     Red = siblings->right;
                     Red->color = father->color;
                     father->color = BLACK;
-                    LR1(Root, Red);
+                    LR1(&Root, &Red);
                 }
             }
             else {//R
@@ -836,21 +836,21 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
                     Red->color = BLACK;
                     siblings->color = father->color;
                     father->color = BLACK;
-                    RR1(Root, Red);
+                    RR1(&Root, &Red);
                 }
                 else {
                     //RL
                     Red = siblings->left;
                     Red->color = father->color;
                     father->color = BLACK;
-                    RL1(Root, Red);
+                    RL1(&Root, &Red);
                 }
             }
             if (mark == 1) {
                 if (cur == father->left)
                     father->left = NULL;
                 else father->right = NULL;
-                free(cur->key);
+                
                 free(cur);
             }
             return;
@@ -858,7 +858,7 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
         else {//兄弟是黑节点，但是兄弟没有红孩子->如果只有一个非NULL的黑子节点不可能，结果就是两个NULL
             // ➔ 兄弟变红，双黑上移父节点————》遇红或根变单黑
             siblings->color = RED;
-            Point->point = father;
+            (*Point)->point = father;
             if (father->left == cur)
                 father->left = NULL;
             else father->right = NULL;
@@ -866,7 +866,7 @@ void Resolve_double_black(RBTree* Root, double_black* Point, int mark)
                 if (cur == father->left)
                     father->left = NULL;
                 else father->right = NULL;
-                free(cur->key);
+                
                 free(cur);
             }
             Resolve_double_black(Root, Point, 0);
@@ -886,104 +886,104 @@ RBTreeNode* Find_key(char* key, RBTree* Root)//查找key值所对应的节点坐
     }
     return cur;
 }
-RBTree* Delete(RBTreeNode* cur, RBTree* Root) {
-    if (cur == NULL)
+RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
+    if (*cur == NULL)
         return Root;
-    RBTreeNode* father = cur->parent;
-    if (cur == Root->root) {
-        if (!(cur->left || cur->right)) {
-            free(cur);
-            Root->root = NULL;
-            return Root;
+    RBTreeNode* father = (*cur)->parent;
+    if (*cur == (*Root)->root) {
+        if (!((*cur)->left || (*cur)->right)) {
+            free((*cur));
+            (*Root)->root = NULL;
+            return (*Root);
         }
-        else if (cur->left && !cur->right) {
-            RBTreeNode* child = cur->left;
-            Root->root = child;
+        else if ((*cur)->left && !(*cur)->right) {
+            RBTreeNode* child = (*cur)->left;
+            (*Root)->root = child;
             child->parent = NULL;
             child->color = BLACK;
-            free(cur);
-            return Root;
+            free(*cur);
+            return *Root;
         }
-        else if (cur->right && !cur->left) {
-            RBTreeNode* child = cur->right;
-            Root->root = child;
+        else if ((*cur)->right && !(*cur)->left) {
+            RBTreeNode* child = (*cur)->right;
+            (*Root)->root = child;
             child->parent = NULL;
             child->color = BLACK;
-            free(cur);
-            return Root;
+            free((*cur));
+            return (*Root);
         }
         else {
-        RBTreeNode* alter = cur->left;
-        while (alter->right != NULL)
-            alter = alter->right;
-        // 不再需要释放cur->key，因为它是数组
-        // 直接使用strcpy复制字符串
-        strcpy(cur->key, alter->key);
-        return Delete(alter, Root);
+            RBTreeNode* alter = (*cur)->left;
+            while (alter->right != NULL)
+                alter = alter->right;
+            // 不再需要释放cur->key，因为它是数组
+            // 直接使用strcpy复制字符串
+            strcpy((*cur)->key, alter->key);
+            return Delete(&alter, Root);
         }
     }
-    if (cur->left == NULL && cur->right != NULL) {
-        RBTreeNode* child = cur->right;
-        if (father->left == cur)
+    if ((*cur)->left == NULL && (*cur)->right != NULL) {
+        RBTreeNode* child = (*cur)->right;
+        if (father->left ==*cur)
             father->left = child;
         else
             father->right = child;
         child->parent = father;
-        if (cur->color == BLACK && child->color == BLACK) {
+        if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(Root, db, 0);
+            Resolve_double_black(&Root, &db, 0);
         }
         else {
             child->color = BLACK;
         }
         free(cur);
-        return Root;
+        return (*Root);
     }
-    else if (cur->right == NULL && cur->left != NULL) {
-        RBTreeNode* child = cur->left;
-        if (father->left == cur)
+    else if ((*cur)->right == NULL && (*cur)->left != NULL) {
+        RBTreeNode* child = (*cur)->left;
+        if (father->left == *cur)
             father->left = child;
         else
             father->right = child;
         child->parent = father;
-        if (cur->color == BLACK && child->color == BLACK) {
+        if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(Root, db, 0);
+            Resolve_double_black(&Root, &db, 0);
         }
         else {
             child->color = BLACK;
         }
-        free(cur);
-        return Root;
+        free((*cur));
+        return (*Root);
     }
-    else if (cur->right == NULL && cur->left == NULL) {
-        if (cur->color == RED) {
+    else if ((*cur)->right == NULL && (*cur)->left == NULL) {
+        if ((*cur)->color == RED) {
             if (cur == father->left)
                 father->left = NULL;
             else
                 father->right = NULL;
-            free(cur);
-            return Root;
+            free((*cur));
+            return (*Root);
         }
         else {
             double_black* This_Point = (double_black*)malloc(sizeof(double_black));
             This_Point->point = cur;
             Resolve_double_black(Root, This_Point, 1);
-            return Root;
+            return (*Root);
         }
     }
     else {
-        RBTreeNode* alter = cur->left;
+        RBTreeNode* alter = (*cur)->left;
         while (alter->right != NULL)
             alter = alter->right;
         // 不再需要释放 cur->key，因为它是数组
         // 直接使用 strcpy 复制字符串
-        strcpy(cur->key, alter->key);
-        return Delete(alter, Root);
+        strcpy((*cur)->key, alter->key);
+        return Delete(&alter, Root);
     }
-    return Root;
+    return (*Root);
 }
 
 void Clear_RBTREE(RBTreeNode* root)
@@ -1007,8 +1007,8 @@ int generateRandomCode(void) {
 RBTree* Root;
 // 生成唯一订单号
 void generateOrderNumber(char* orderNumber) {
-   // char* orderNumber = *orderNumber1;
-    // 获取当前时间
+    // char* orderNumber = *orderNumber1;
+     // 获取当前时间
     time_t currentTime = time(NULL);
     // 生成随机数
     int randomCode = generateRandomCode();
@@ -1037,7 +1037,7 @@ typedef struct {
     char ch;//ch可以在A到F 1 2 3 4 5 6
 }Intelligent_schedule_number;
 Intelligent_schedule_number NUM;
-void confirm_outbound(OutboundOrder* order) {
+int confirm_outbound(OutboundOrder* order) {
     // 文字提示+信息显示
     printf("\n====== 出库二次确认 ======\n");
     printf("订单号: %s\n电话\n", order->order_id);
@@ -1050,9 +1050,11 @@ void confirm_outbound(OutboundOrder* order) {
         order->outbound_time = time(NULL); // 记录出库时间
         order->status = 1;
         printf("出库成功"); //
+        return 0;
     }
     else {
         printf("出库取消");
+        return 1;
     }
 }
 // 时间差计算（单位：小时）
@@ -1076,15 +1078,15 @@ void check_expiration(OutboundOrder* order) {
         }
     }
 }
-void GenerateOrder(RBTree**Root)
+void GenerateOrder(RBTree** Root)
 {
-    
+
     OutboundOrder* ptr = (OutboundOrder*)malloc(sizeof(OutboundOrder));
     if (!ptr)
     {
         printf("PTR hasnot enough memory");
     }
-    goods* Goods = (goods*)malloc(sizeof(goods)); 
+    goods* Goods = (goods*)malloc(sizeof(goods));
     if (!Goods)
     {
         printf("GOODS hasnot enough memory");
@@ -1102,7 +1104,7 @@ void GenerateOrder(RBTree**Root)
     while ((c = getchar()) != '\n' && c != EOF);
     printf("请输入联系电话");
     scanf_s("%s", ptr->phone, 20);
-    printf("%s ",ptr->phone);
+    printf("%s ", ptr->phone);
     printf("%s ", ptr->phone);
     //把订单号放到user里面
     User* user = hash_search(ht, ptr->phone);
@@ -1117,7 +1119,7 @@ void GenerateOrder(RBTree**Root)
     printf("\n%s\n", user->tail->mark, user->tail->data->shelf);
     ptr->status = 0;//创建时未出库
     log_operation("入库", ptr->order_id, "管理员");
-    
+
     FILE* fp = fopen(ptr->phone, "a");
     if (!fp)
     {
@@ -1137,12 +1139,12 @@ void GenerateOrder(RBTree**Root)
 
 
     if ((*Root)->root == NULL)
-        tmp = newNode(ptr->order_id, Root,tmp,ptr);
+        tmp = newNode(ptr->order_id, Root, tmp, ptr);
     else
-        tmp = Add_node(ptr->order_id, Root,tmp,ptr);
+        tmp = Add_node(ptr->order_id, Root, tmp, ptr);
 
     Pre_order((*Root)->root);
-    printf("\n%lld\n",Root);
+    printf("\n%lld\n", Root);
 }
 void Intelligent_schedule(OutboundOrder* order)//智能调度
 {
@@ -1183,19 +1185,21 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
     shelf[4] = '0' + i;
     shelf[5] = '\0';
 }
-void Pickup(RBTree* Root, OutboundOrder* order)
+void Pickup(RBTree** Root, OutboundOrder** order)
 {
     printf("输入你的手机号和密码\n");
     char tel[20], mima[20];
     scanf_s("%s", tel, sizeof(tel));
     scanf_s("%s", mima, sizeof(mima));
-
-    printf("%s",tel);
-    printf("%s",order->phone);
-    if ((!strcmp(tel, order->phone)))
-        confirm_outbound(order);
-    log_operation("出库", order->order_id, order->phone);
-    OutboundOrder* ptr = order;
+    printf("%s", tel);
+    printf("%s", (*order)->phone);
+    if ((!strcmp(tel, (*order)->phone))) {
+      int k=confirm_outbound(*order);
+      if (k)
+          return;
+    }
+    log_operation("出库", (*order)->order_id, (*order)->phone);
+    OutboundOrder* ptr = *order;
     FILE* fp = fopen(ptr->phone, "a");
     if (!fp)
     {
@@ -1212,11 +1216,10 @@ void Pickup(RBTree* Root, OutboundOrder* order)
     }
     //删除订单
     list* tmp = Find_char_list(ptr->order_id, user->head);
-    free(order->Good);
-    Delete_list(tmp, user->head, user->tail, &user->length);
-    fclose(fp);
-    RBTreeNode* ntmp = Find_key(ptr->phone, Root);
-    Delete(ntmp, Root);
+    free((*order)->Good);
+    Delete_list(&tmp, &user->head, &user->tail, &user->length);
+    RBTreeNode* ntmp = Find_key(ptr->phone, *Root);
+    Delete(&ntmp,Root);
 }
 void Inquiry_order(RBTree* Root, char* order_id) {
     RBTreeNode* tmp = Find_key(order_id, Root);
