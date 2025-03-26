@@ -33,20 +33,20 @@ int main()
 
     GenerateOrder(&Root);
     User* user = hash_search(ht, "15539796296");
-    printf("%s %d %s \n", user->tail->data->order_id,user->length,user->tail->data->shelf);
+    printf("%s %d %s \n", user->tail->data->order_id, user->length, user->tail->data->shelf);
 
 
-  //  Pre_order(Root);
+    //  Pre_order(Root);
     RBTreeNode* first = Root->root;
     OutboundOrder* ptr = first->ptr;
-  //  printf("%s \n",ptr->phone);
-    printf("%s \n",ptr->order_id);
-    printf("%s \n",ptr->phone);
-    printf("%s \n",ptr->shelf);
-    printf("%s \n", (char*)ptr,20);
-    printf("%s \n", (char*)ptr+20, 20);
+    //  printf("%s \n",ptr->phone);
+    printf("%s \n", ptr->order_id);
+    printf("%s \n", ptr->phone);
+    printf("%s \n", ptr->shelf);
+    printf("%s \n", (char*)ptr, 20);
+    printf("%s \n", (char*)ptr + 20, 20);
     printf("%s \n", (char*)ptr + 40, 6);
-    Pickup(Root, ptr);
+    Pickup(&Root, &ptr);
     Inquiry_order(Root, ptr->order_id);
     Clear_RBTREE(Root->root);
     free(Root);
