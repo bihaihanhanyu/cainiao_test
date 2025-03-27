@@ -1,94 +1,56 @@
-#include<stdio.h>
 
-//错取，库存预警提醒取件，损坏，丢失，拒收
+
+#include "head.h"
+#define _CRT_SECURE_NO_WARNINGS
+
+// 函数声明
+
 int main()
 {
-	printf("------ 菜鸟驿站系统 ------");
-	printf("1. 用户登录");
-	printf("2. 管理员登录");
-	printf("3. 退出");
-	printf("--------------------------");
-	char x;
-	x = getchar();
-	while (x != '3')
-	{
-		x = getchar();
-		if (x == '1')
-		{
-			//用户的取件，寄件，查询
-			printf("请输入您的手机号码");
-			int ttel[12];
-			scanf("%d", ttel);
-			if (finduser(ttel))//查找用户，若找到则返回其结构体指针
-			{
-				user* t_user = finduser(ttel);
-				printf("1.取件    2.寄件    3.查询     4.退出");
-				int opera;
-				scanf("%d", &opera);
-				if (opera == 4)
-				{
-					break;
-				}
-				while (opera != 4)
-				{
-					if (opera == 1)
-					{
-						pickup(t_user);//取件
-					}
-					else if (opera == 2)
-					{
-						send(t_user);//寄件
-					}
-					else
-						check(t_user);//查询包裹
-				}
-					
-			}
-			else
-			{
-				printf("用户不存在！");
-					break;
-			}
+
+    // 初始化哈希表
+   
+    init_shelves();
+    SystemConfig sys_config;
+    ht = hash_init(1009);
+    srand((int)time(NULL)); // 只设置一次随机数种子
+    RBTree* Root = (RBTree*)malloc(sizeof(RBTree));
+    Root->root = NULL;
+    // 尝试加载配置
+    if (!load_config(&sys_config)) {
+        printf("配置文件不存在，创建默认配置...\n");
+        init_default_config();
+        load_config(&sys_config); // 重新加载
+    }
+    FILE* load = fopen("test.txt", "r");
+    if (!load)
+    {
+        
+        perror("test.txt cannot be opened!");
+    }
+    // 从文件读取数据
+    else {
+        read_from_file(load, &Root);
+        if (load)
+            fclose(load);
+    }
+    // 使用配置参数
+    printf("当前管理员密码：%s\n", sys_config.admin_password);
+    printf("当前容量阈值：%d\n", sys_config.capacity_threshold);
 
 
-		}
-		else if (x == 2)//管理员操作
-		{
-			printf("请输入您的账号");
-			int t_acount[12];
-			scanf("%d", t_acount);
-			printf("请输入密码");
-			char t_passworld[20];
-			scanf("%s", t_passworld);
-			adm* t_adm;         //登陆操作
-			if (t_adm = find(t_acount) && !strcmp(t_passworld, t_adm->passworld))
-			{
-				printf("登录成功！");
-				printf("1.入库  2.库存盘点 3.退出");
-				int op;
-				scanf("%d", op);
-				if (op == 3)break;
-				while (op != 3)
-				{
-					if (op==1)
-					{
-						store();//入库
-					}
-					else
-					{
-						checkup();//库存查询
-					}
-					scanf("%d", op);
-				}
-
-
-			}
-			else
-				printf("账户或密码错误");
-		}
-
-
-	}
-
-	return 0;
+    // 显示菜单并处理用户输入
+    int x = 1;
+    while (x) {
+        displayMenu();
+        handleUserInput(&Root, ht, &sys_config, &x);
+    }
+    // 清理资源
+    Clear_RBTREE(Root->root);
+    free(Root);
+    for (int i = 0; i < 6; i++) {
+        Clear_RBTREE(shelves[i].tree->root);
+        free(shelves[i].tree);
+    }
+    return 0;
 }
