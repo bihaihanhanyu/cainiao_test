@@ -125,7 +125,6 @@ void log_exception(const PackageException* exception) {
 
 
 
-
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
 
@@ -1006,12 +1005,12 @@ RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
         if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(&Root, &db, 0);
+            Resolve_double_black(Root, &db, 0);
         }
         else {
             child->color = BLACK;
         }
-        free(cur);
+        free(*cur);
         return (*Root);
     }
     else if ((*cur)->right == NULL && (*cur)->left != NULL) {
@@ -1308,12 +1307,20 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
     }
     return;
 }
-void Pickup(RBTree** Root)//, OutboundOrder** order)
+void Pickup(RBTree** Root,int i)//, OutboundOrder** order)
 {
+    if(!i){
     printf("输入你的手机号和密码\n");
     char tel[20], mima[20];
     scanf_s("%s", tel, sizeof(tel));
     scanf_s("%s", mima, sizeof(mima));
+    }
+    else{
+        printf("输入取件人的手机号\n");
+          char tel[20];   
+     scanf_s("%s", tel, sizeof(tel));    
+    }
+    
     User* user = hash_search(ht, tel);
     if (user) {
         printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
@@ -1323,16 +1330,24 @@ void Pickup(RBTree** Root)//, OutboundOrder** order)
     }
     if (!user->length)
     {
-        printf("你没有可取包裹\n");
+        printf("没有可取包裹\n");
         return;
     }
     OutboundOrder* order = user->head->next->data;
-    printf("%s", tel);
-    printf("%s", order->phone);
+//    printf("%s", tel);
+  //  printf("%s", order->phone);
+    if(!i){
     if ((!strcmp(user->tel, order->phone)) && (!strcmp(mima, user->mima))) {
         int k = confirm_outbound(order);
         if (k)
             return;
+    }
+}
+    else{
+ if ((!strcmp(user->tel, order->phone))) {
+        int k = confirm_outbound(order);
+        if (k)
+            return;        
     }
     log_operation("出库", order->order_id, order->phone);
     OutboundOrder* ptr = order;
@@ -1582,13 +1597,13 @@ void registerUser(HashTable* ht);
 // 显示菜单
 void displayMenu(void) {
     printf("\n快递管理系统菜单:\n");
-    printf("1. 生成新订单\n");
-    printf("2. 取件   (如有多件待取物品请多次操作)\n");
+    printf("1. 员工登陆(创建新订单)(取件（不需要输入密码）)(汇报货物异常情况)\n");
+    printf("2. 用户取件   (如有多件待取物品请多次操作)\n");
     printf("3. 查找用户\n");
-    printf("4. 管理员模式\n");
-    printf("5. 退出\n");
-    printf("6. 注册用户\n");
-    printf("7. 查询包裹异常信息\n");
+    printf("4. 管理员模式(改变员工/管理员密码)(查看货架属性)(遍历货物链表，货架链表)(查看货物情况)\n");
+    printf("5. 注册用户\n");
+    printf("6. 用户登录(查询包裹异常信息)(取件（需要输入密码）)\n");
+    printf("7. 退出\n");
     printf("请输入你的选择: \n");
 }
 
@@ -1600,10 +1615,72 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
 
     switch (choice) {
     case 1:
-        GenerateOrder(Root);
+        /*
+        员工登陆的部分
+        */
+        printf("1. 创建新订单\n");
+        printf("2. 取件\n");
+        printf("3. 货物异常情况登记\n");
+        printf("请输入你的选择\n");
+        int n;
+        scanf_s("%d",&n);
+        getchar();
+        switch(n){
+            case 1:
+            GenerateOrder(Root);
+            break;
+            case 2:
+            Pickup(Root,1);
+            break;
+            case 3:
+              printf("请输入异常包裹的订单号\n");
+                char order_id[20];
+                scanf_s("%s",order_id,sizeof(order_id));
+                getchar();
+                printf("\n设置包裹异常属性:\n");
+                printf("1. 丢失\n");
+                printf("2. 损坏\n");
+                printf("3. 超期滞留\n");
+                printf("4. 信息错误\n");
+                printf("输入你的选择\n");  
+                   int n;
+                scanf_s("%d",&n);
+                getchar();
+                const char*type_str;
+        switch (n-1) {
+        case LOST:
+            type_str = "丢失";
+            break;
+        case DAMAGED:
+            type_str = "损坏";
+            break;
+        case OVERDUE_STAY:
+            type_str = "超期滞留";
+            break;
+        case INFORMATION_ERROR:
+            type_str = "信息错误";
+            break;
+        default:
+            type_str = "未知异常";
+            break;
+        }
+                 PackageException exception = {
+                 PackageExceptionType(n-1),
+                 time(NULL),
+                 order_id
+                };
+                printf("请输出异常描述\n");
+                scanf_s("%s",exception.description,sizeof(exception.description));
+                getchar();
+                log_exception(&exception);
+                printf("包裹异常属性设置完成\n");
+                break;            default:
+                printf("输入不合法\n");
+                break;
+        }
         break;
     case 2: {
-        Pickup(Root);
+        Pickup(Root,0);
         break;
     }
     case 3: {
@@ -1622,14 +1699,14 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
     case 4:
         adminInterface(*Root, sys_config);
         break;
-    case 5:
+    case 7:
         printf("退出系统\n");
         (*x) = 0;
         break;
-    case 6:
+    case 5:
         registerUser(ht);
         break;
-    case 7: {
+    case 6: {
         char phone[20];
         char mima[20];
         char package_id[40];
@@ -1640,7 +1717,8 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
             printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
         }
         else {
-            printf("输入错误\n");
+            printf("输入错误或没有进行注册\n");
+            break;
         }
         printf("请输入密码\n");
         scanf_s("%s", mima, sizeof(mima));
@@ -1648,6 +1726,19 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         {
             printf("\n登陆成功\n");
         }
+        else{
+            printf("密码输入错误\n");
+            break;
+        }
+        printf("1. 查询包裹异常信息\n");
+        printf("2. 取件\n");
+        printf("请输入你的选择\n");
+        int k;
+        scanf_s("%d",&k);
+        switch(k)
+            {
+                case 1:
+                
         list* temp = user->head->next;
         while (temp)
         {
@@ -1659,6 +1750,12 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         printf("请输入要查询的订单编号: ");
         scanf_s("%s", package_id, sizeof(package_id));
         query_package_exceptions(package_id);
+        break;
+                case 2:
+                Pickup(Root,0);
+                
+            }
+
         break;
     }
 
@@ -1712,7 +1809,10 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             printf("3. 遍历特定货架的树\n");
             printf("4. 重新设置管理员密码\n");
             printf("5. 设置包裹异常属性\n);
-            printf("6. 退出管理员模式\n");
+            printf("6. 重新设置员工密码");
+            printf("7. 查看日志\n");
+            printf("8. 退出管理员模式\n");
+            
             printf("请输入你的选择: \n");
             scanf("%d", &choice);
             getchar(); // 消耗掉换行符
@@ -1747,6 +1847,7 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 printf("2. 损坏\n");
                 printf("3. 超期滞留\n");
                 printf("4. 信息错误\n");
+                printf("5. 未知异常\n");
                 printf("输入你的选择\n");  
                    int n;
                 scanf_s("%d",&n);
@@ -1780,7 +1881,17 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 log_exception(&exception);
                 printf("包裹异常属性设置完成\n");
                 break;
-            case 6:  
+                case 6:
+                /*
+                    改变员工的密码
+                */
+                break;
+                case 7:
+                /*
+                    查看日志
+                */
+                break;
+            case 8:  
                 printf("退出管理员模式\n");
                 return;
             default:
@@ -1812,15 +1923,15 @@ void registerUser(HashTable* ht) {
     char check_mima[20];
     int userType;
 
-    printf("请输入手机号: ");
+    printf("请输入手机号: \n");
     scanf_s("%s", phone, sizeof(phone));
     getchar(); // 消耗掉换行符
     User* user = hash_search(ht, phone);
     if (user) {
-        printf("用户已注册");
+        printf("用户已注册 \n");
         return;
     }
-    printf("请输入姓名: ");
+    printf("请输入姓名: \n");
     scanf_s("%s", name, sizeof(name));
     getchar(); // 消耗掉换行符
 
