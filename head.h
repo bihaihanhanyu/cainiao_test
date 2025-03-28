@@ -1,4 +1,8 @@
+/*
 #pragma once
+#include"calculate.h"
+#include"console.h"
+*/
 #pragma warning(disable : 4996)
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>  // 提供输入输出函数，如printf、scanf、fopen、fprintf、fclose等
@@ -11,6 +15,7 @@
 #include<stdlib.h>
 void format_time(time_t timestamp, char* buffer);
 void query_package_exceptions(const char* package_id);
+
 #define OVERDUE_TIME_THRESHOLD 86400  // 一天的秒数，可根据实际情况调整
 typedef enum PackageExceptionType {
     LOST,           // 丢失
@@ -57,7 +62,34 @@ typedef struct {
     int status;           // 状态标记（0=待出库，1=已出库）
     goods* Good;//货物订单
 } OutboundOrder;
+typedef struct  List list;
+struct List {
+    char mark[20];
+    OutboundOrder* data;
+    list* pre;//前一项
+    list* next;//后一项
+};
 
+typedef struct User {//用户
+    char tel[12];//还需要手机号和联系方式
+    UserType u_type;//不同级别用户
+    char name[30];
+    char mima[20];
+    //struct Order* ord;//用户未取包裹的链头
+    //初始化的时候把下面的三个指针初始化一下
+    //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
+    list* head;//用户用来维护包裹链表的两个指针
+    list* tail;
+    int length;//链表的长度初始化为零
+    struct User* next;
+}User;
+typedef struct HashTable {
+    User** buckets;    // 哈希桶数组
+    int size;              // 哈希表容量（建议选素数，如1009）
+    int count;             // 当前存储用户数量
+} HashTable;
+// 将手机号转换为哈希索引
+HashTable* ht;
 
 void log_exception(const PackageException* exception) {
     FILE* log_file = fopen("exception.log", "a"); // 追加模式
@@ -96,13 +128,7 @@ void log_exception(const PackageException* exception) {
 
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
-typedef struct  List list;
-struct List {
-    char mark[20];
-    OutboundOrder* data;
-    list* pre;//前一项
-    list* next;//后一项
-};
+
 
 static void Isolate_list(list* temp, list* tail);
 //type 1 第2种链表,head不存内容
@@ -275,25 +301,7 @@ struct Order;
 
  */
 
-typedef struct User {//用户
-    char tel[12];//还需要手机号和联系方式
-    UserType u_type;//不同级别用户
-    char name[30];
-    char mima[20];
-    //struct Order* ord;//用户未取包裹的链头
-    //初始化的时候把下面的三个指针初始化一下
-    //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
-    list* head;//用户用来维护包裹链表的两个指针
-    list* tail;
-    int length;//链表的长度初始化为零
-    struct User* next;
-}User;
-typedef struct HashTable {
-    User** buckets;    // 哈希桶数组
-    int size;              // 哈希表容量（建议选素数，如1009）
-    int count;             // 当前存储用户数量
-} HashTable;
-// 将手机号转换为哈希索引
+
 unsigned int hash_func(const char* phone, int table_size) {
     unsigned long hash = 5381;
     int c;
@@ -310,7 +318,6 @@ HashTable* hash_init(int size) {
     // ht->buckets = (User**)calloc(size, sizeof(User*));
     return ht;
 }
-HashTable* ht;
 void hash_insert(HashTable* ht, const char* phone, const char* name, const char* mima, const UserType  type) {
     unsigned int index = hash_func(phone, ht->size);
     User* node = ht->buckets[index];
@@ -435,6 +442,7 @@ float calculateMoney(User* user, struct Goods* goods, float base_prise)
 time_t get_current_timestamp(void) {
     return time(NULL); // 获取当前系统时间（秒级精度）
 }
+
 typedef struct {
     time_t timestamp;       // 操作时间戳（精确到秒）
     char operation_type[20];// 操作类型（入库/出库/修改等）
@@ -476,7 +484,8 @@ void trace_package(const char* target_id) {
     fclose(log_file);
 }
 
-//-----------------------------------------------------------把-------------------------
+//-----------------------------------------------------------------------------------
+
 typedef enum { BLACK, RED }Color;
 typedef struct RBTreeNode {//红黑树节点
     char key[20];
@@ -492,9 +501,11 @@ typedef struct RBTree {
 typedef struct double_black {
     RBTreeNode* point;
 }double_black;
+
 //创建红黑树
 //创建的是根结点
 //下面的四种LL,RR,RK,LR是针对插入新节点的状况的插入策略，和颜色改变策略
+
 void LL(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
 {
     RBTreeNode* father = (*cur)->parent;
@@ -1061,14 +1072,17 @@ void Clear_RBTREE(RBTreeNode* root)
     free(root);
 }
 //-----------------------------------------------------------
+
 typedef struct Goods goods;
 typedef long long ll;//LL
 static int sequence = 0;
+
 int generateRandomCode(void) {
     return rand() % 1000; // 生成 0 - 999 的随机数
 }
-RBTree* Root;
+//RBTree* Root;
 // 生成唯一订单号
+
 void generateOrderNumber(char* orderNumber) {
     // char* orderNumber = *orderNumber1;
      // 获取当前时间
@@ -1081,7 +1095,7 @@ void generateOrderNumber(char* orderNumber) {
     sprintf(orderNumber, "%ld%03d%03d", currentTime, randomCode, sequence);
 }
 // 生成四位数取件码，使用毫秒级时间
-/*void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
+void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
     ULARGE_INTEGER ui;
@@ -1091,9 +1105,9 @@ void generateOrderNumber(char* orderNumber) {
     int msPart = milliseconds % 100;
     sprintf(pickupCode, "%c%d%02d", shelfArea, layer, msPart);
 }
-*/
+
 // 出库订单结构体
-HashTable* ht;
+
 
 
 //------------------------------------------------------------------
@@ -1110,6 +1124,7 @@ typedef struct Shelf {
 Shelf shelves[SHELF_COUNT];
 
 // 初始化货架
+
 void init_shelves(void) {
     char shelf_names[7] = { 'A','B','C','D','E','F','\0' };
     for (int i = 0; i < SHELF_COUNT; i++) {
@@ -1392,11 +1407,14 @@ void check_all_orders_for_overdue(HashTable* ht) {
 
 
 //-------------------------------------------------------------
+
 typedef struct {
     char admin_password[50];  // 存储密码字符串
     int capacity_threshold;   // 存储整数型阈值
     //  int money;
 } SystemConfig;
+
+
 int load_config(SystemConfig* config) {
     FILE* fp = fopen("config.cfg", "r");
     if (!fp) return 0; // 文件不存在返回0
