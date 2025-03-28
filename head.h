@@ -1261,7 +1261,7 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
         return;
     }
 
-    int i = shelves[k].current_count;
+    int i = rand() % 600;
     order->shelf[0] = ch;
     while (1) {
         order->shelf[1] = '0' + i / 1000;
@@ -1282,6 +1282,7 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
             printf("智能调度成功\n");
             break;
         }
+        i = rand() % 600;
     }
     shelves[order->Good->p_type].current_count += 1;
     if (shelves[order->Good->p_type].current_count > 500)
@@ -1442,6 +1443,7 @@ void init_default_config() {
 
 void read_from_file(FILE* load, RBTree** Root) {
     while (1) {
+        char mima[20];
         OutboundOrder* ptr = (OutboundOrder*)malloc(sizeof(OutboundOrder));
         if (!ptr) {
             printf("PTR hasnot enough memory");
@@ -1454,13 +1456,11 @@ void read_from_file(FILE* load, RBTree** Root) {
             break;
         }
         ptr->Good = Goods;
-
         if (fscanf(load, "%50s", ptr->Good->name) != 1) {
-            free(ptr->Good);
-            free(ptr);
-            break;
+                free(ptr->Good);
+                free(ptr);
+                break;
         }
-
         if (fscanf(load, "%d", &(ptr->Good->p_type)) != 1) {
             free(ptr->Good);
             free(ptr);
@@ -1472,7 +1472,7 @@ void read_from_file(FILE* load, RBTree** Root) {
             free(ptr);
             break;
         }
-
+     
         generateOrderNumber(ptr->order_id);
         RBTreeNode* tmp = (RBTreeNode*)malloc(sizeof(RBTreeNode));
         ptr->create_time = time(NULL);
@@ -1494,14 +1494,29 @@ void read_from_file(FILE* load, RBTree** Root) {
         }
         else {
             printf("未找到该用户\n");
+            free(tmp);
+            free(ptr->Good);
+            free(ptr);
+            continue;
         }
-
+        if (fscanf(load, "%20s", &mima != 1)) {
+            free(tmp);
+            free(ptr->Good);
+            free(ptr);
+            break;
+        }
+        if (!strcpy(mima,user->mima))
+        {
+            free(tmp);
+            free(ptr->Good);
+            free(ptr);
+            continue;
+        }
         Intelligent_schedule(ptr);  // 智能调度
         Add_list(&user->head, &ptr, &user->tail, &user->length);
         printf("\n%s\n%s\n", user->tail->mark, user->tail->data->shelf);
         ptr->status = 0;  // 创建时未出库
         log_operation("入库", ptr->order_id, "管理员");
-
         FILE* fp = fopen(ptr->phone, "a");
         if (!fp) {
             perror("ERROR! 订单录入失败");
@@ -1595,8 +1610,33 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         registerUser(ht);
         break;
     case 7: {
-        char package_id[20];
-        printf("请输入要查询的包裹编号: ");
+        char phone[20];
+        char mima[20];
+        char package_id[40];
+        printf("请输入用户的手机号: ");
+        scanf("%s", phone);
+        User* user = hash_search(ht, phone);
+        if (user) {
+            printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
+        }
+        else {
+            printf("输入错误\n");
+        }
+        printf("请输入密码\n");
+        scanf_s("%s", mima, sizeof(mima));
+        if (!strcpy(mima, user->mima))
+        {
+            printf("\n登陆成功\n");
+        }
+        list* temp = user->head->next;
+        while (temp)
+        {
+            printf("订单号为%s\n", temp->data->order_id);
+            printf("货物位置为%s\n", temp->data->shelf);
+            printf("--------------------------------");
+            temp = temp->next;
+        }
+        printf("请输入要查询的订单编号: ");
         scanf_s("%s", package_id, sizeof(package_id));
         query_package_exceptions(package_id);
         break;
@@ -1651,7 +1691,7 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             printf("2. 查看各货架属性\n");
             printf("3. 遍历特定货架的树\n");
             printf("4. 重新设置管理员密码\n");
-            printf("5. 推出管理员模式\n");
+            printf("5. 退出管理员模式\n");
             printf("请输入你的选择: ");
             scanf("%d", &choice);
             getchar(); // 消耗掉换行符
