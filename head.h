@@ -3,6 +3,7 @@
 #include"calculate.h"
 #include"console.h"
 */
+#pragma once
 #pragma warning(disable : 4996)
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>  // 提供输入输出函数，如printf、scanf、fopen、fprintf、fclose等
@@ -15,7 +16,6 @@
 #include<stdlib.h>
 void format_time(time_t timestamp, char* buffer);
 void query_package_exceptions(const char* package_id);
-
 #define OVERDUE_TIME_THRESHOLD 86400  // 一天的秒数，可根据实际情况调整
 typedef enum PackageExceptionType {
     LOST,           // 丢失
@@ -62,34 +62,7 @@ typedef struct {
     int status;           // 状态标记（0=待出库，1=已出库）
     goods* Good;//货物订单
 } OutboundOrder;
-typedef struct  List list;
-struct List {
-    char mark[20];
-    OutboundOrder* data;
-    list* pre;//前一项
-    list* next;//后一项
-};
 
-typedef struct User {//用户
-    char tel[12];//还需要手机号和联系方式
-    UserType u_type;//不同级别用户
-    char name[30];
-    char mima[20];
-    //struct Order* ord;//用户未取包裹的链头
-    //初始化的时候把下面的三个指针初始化一下
-    //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
-    list* head;//用户用来维护包裹链表的两个指针
-    list* tail;
-    int length;//链表的长度初始化为零
-    struct User* next;
-}User;
-typedef struct HashTable {
-    User** buckets;    // 哈希桶数组
-    int size;              // 哈希表容量（建议选素数，如1009）
-    int count;             // 当前存储用户数量
-} HashTable;
-// 将手机号转换为哈希索引
-HashTable* ht;
 
 void log_exception(const PackageException* exception) {
     FILE* log_file = fopen("exception.log", "a"); // 追加模式
@@ -125,9 +98,16 @@ void log_exception(const PackageException* exception) {
 
 
 
+
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
-
+typedef struct  List list;
+struct List {
+    char mark[20];
+    OutboundOrder* data;
+    list* pre;//前一项
+    list* next;//后一项
+};
 
 static void Isolate_list(list* temp, list* tail);
 //type 1 第2种链表,head不存内容
@@ -157,7 +137,7 @@ list* Find_list(list* head, int num)//返回第num个链表的位置
 void Delete_list(list** p, list** head, list** tail, int* length)
 {
     if (*p == *head)
-        printf("You cannot delete head ptr.", errno);
+        perror("You cannot delete head ptr.");
     if (*length == 1)
         (*head)->next = (*tail) = NULL;
     else
@@ -300,7 +280,25 @@ struct Order;
 
  */
 
-
+typedef struct User {//用户
+    char tel[12];//还需要手机号和联系方式
+    UserType u_type;//不同级别用户
+    char name[30];
+    char mima[20];
+    //struct Order* ord;//用户未取包裹的链头
+    //初始化的时候把下面的三个指针初始化一下
+    //ord tail 是NULL,head 是给一个malloc 删除的时候也需要释放head分配的内存
+    list* head;//用户用来维护包裹链表的两个指针
+    list* tail;
+    int length;//链表的长度初始化为零
+    struct User* next;
+}User;
+typedef struct HashTable {
+    User** buckets;    // 哈希桶数组
+    int size;              // 哈希表容量（建议选素数，如1009）
+    int count;             // 当前存储用户数量
+} HashTable;
+// 将手机号转换为哈希索引
 unsigned int hash_func(const char* phone, int table_size) {
     unsigned long hash = 5381;
     int c;
@@ -317,6 +315,7 @@ HashTable* hash_init(int size) {
     // ht->buckets = (User**)calloc(size, sizeof(User*));
     return ht;
 }
+HashTable* ht;
 void hash_insert(HashTable* ht, const char* phone, const char* name, const char* mima, const UserType  type) {
     unsigned int index = hash_func(phone, ht->size);
     User* node = ht->buckets[index];
@@ -441,7 +440,6 @@ float calculateMoney(User* user, struct Goods* goods, float base_prise)
 time_t get_current_timestamp(void) {
     return time(NULL); // 获取当前系统时间（秒级精度）
 }
-
 typedef struct {
     time_t timestamp;       // 操作时间戳（精确到秒）
     char operation_type[20];// 操作类型（入库/出库/修改等）
@@ -483,8 +481,7 @@ void trace_package(const char* target_id) {
     fclose(log_file);
 }
 
-//-----------------------------------------------------------------------------------
-
+//-----------------------------------------------------------把-------------------------
 typedef enum { BLACK, RED }Color;
 typedef struct RBTreeNode {//红黑树节点
     char key[20];
@@ -500,11 +497,9 @@ typedef struct RBTree {
 typedef struct double_black {
     RBTreeNode* point;
 }double_black;
-
 //创建红黑树
 //创建的是根结点
 //下面的四种LL,RR,RK,LR是针对插入新节点的状况的插入策略，和颜色改变策略
-
 void LL(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
 {
     RBTreeNode* father = (*cur)->parent;
@@ -1005,12 +1000,12 @@ RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
         if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(Root, &db, 0);
+            Resolve_double_black(&Root, &db, 0);
         }
         else {
             child->color = BLACK;
         }
-        free(*cur);
+        free(cur);
         return (*Root);
     }
     else if ((*cur)->right == NULL && (*cur)->left != NULL) {
@@ -1071,17 +1066,14 @@ void Clear_RBTREE(RBTreeNode* root)
     free(root);
 }
 //-----------------------------------------------------------
-
 typedef struct Goods goods;
 typedef long long ll;//LL
 static int sequence = 0;
-
 int generateRandomCode(void) {
     return rand() % 1000; // 生成 0 - 999 的随机数
 }
-//RBTree* Root;
+RBTree* Root;
 // 生成唯一订单号
-
 void generateOrderNumber(char* orderNumber) {
     // char* orderNumber = *orderNumber1;
      // 获取当前时间
@@ -1094,7 +1086,7 @@ void generateOrderNumber(char* orderNumber) {
     sprintf(orderNumber, "%ld%03d%03d", currentTime, randomCode, sequence);
 }
 // 生成四位数取件码，使用毫秒级时间
-void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
+/*void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
     ULARGE_INTEGER ui;
@@ -1104,9 +1096,9 @@ void generatePickupCode(char* pickupCode, char shelfArea, int layer) {
     int msPart = milliseconds % 100;
     sprintf(pickupCode, "%c%d%02d", shelfArea, layer, msPart);
 }
-
+*/
 // 出库订单结构体
-
+HashTable* ht;
 
 
 //------------------------------------------------------------------
@@ -1123,7 +1115,6 @@ typedef struct Shelf {
 Shelf shelves[SHELF_COUNT];
 
 // 初始化货架
-
 void init_shelves(void) {
     char shelf_names[7] = { 'A','B','C','D','E','F','\0' };
     for (int i = 0; i < SHELF_COUNT; i++) {
@@ -1143,7 +1134,7 @@ int confirm_outbound(OutboundOrder* order) {
     printf("输入Y(y)确定出库\n");
     // 确认逻辑
     char confirm;
-    
+
     scanf_s(" %c", &confirm);
 
     if (confirm == 'Y' || confirm == 'y') {
@@ -1277,7 +1268,7 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
         return;
     }
 
-    int i = rand() % 600;
+    int i = shelves[k].current_count;
     order->shelf[0] = ch;
     while (1) {
         order->shelf[1] = '0' + i / 1000;
@@ -1298,29 +1289,27 @@ void Intelligent_schedule(OutboundOrder* order)//智能调度
             printf("智能调度成功\n");
             break;
         }
-        i = rand() % 600;
     }
     shelves[order->Good->p_type].current_count += 1;
     if (shelves[order->Good->p_type].current_count > 500)
     {
-        printf("货架%c已达阈值\n",ch);
+        printf("货架%c已达阈值\n", ch);
     }
     return;
 }
-void Pickup(RBTree** Root,int i)//, OutboundOrder** order)
+void Pickup(RBTree** Root, int i)//, OutboundOrder** order)
 {
-    if(!i){
-    printf("输入你的手机号和密码\n");
     char tel[20], mima[20];
-    scanf_s("%s", tel, sizeof(tel));
-    scanf_s("%s", mima, sizeof(mima));
+    if (!i) {
+        printf("输入你的手机号和密码\n");
+        scanf_s("%s", tel, sizeof(tel));
+        scanf_s("%s", mima, sizeof(mima));
     }
-    else{
+    else {
         printf("输入取件人的手机号\n");
-          char tel[20];   
-     scanf_s("%s", tel, sizeof(tel));    
+        scanf_s("%s", tel, sizeof(tel));
     }
-    
+
     User* user = hash_search(ht, tel);
     if (user) {
         printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
@@ -1334,41 +1323,42 @@ void Pickup(RBTree** Root,int i)//, OutboundOrder** order)
         return;
     }
     OutboundOrder* order = user->head->next->data;
-//    printf("%s", tel);
-  //  printf("%s", order->phone);
-    if(!i){
-    if ((!strcmp(user->tel, order->phone)) && (!strcmp(mima, user->mima))) {
-        int k = confirm_outbound(order);
-        if (k)
-            return;
+    //    printf("%s", tel);
+      //  printf("%s", order->phone);
+    if (!i) {
+        if ((!strcmp(user->tel, order->phone)) && (!strcmp(mima, user->mima))) {
+            int k = confirm_outbound(order);
+            if (k)
+                return;
+        }
     }
-}
-    else{
- if ((!strcmp(user->tel, order->phone))) {
-        int k = confirm_outbound(order);
-        if (k)
-            return;        
-    }
-    log_operation("出库", order->order_id, order->phone);
-    OutboundOrder* ptr = order;
-    FILE* fp = fopen(ptr->phone, "a");
-    if (!fp)
-    {
-        perror("ERROR!");
-    }
-    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%ld\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time, ptr->Good->name, ptr->Good->p_type);
-    fclose(fp);
+    else {
+        if ((!strcmp(user->tel, order->phone))) {
+            int k = confirm_outbound(order);
+            if (k)
+                return;
+        }
+        log_operation("出库", order->order_id, order->phone);
+        OutboundOrder* ptr = order;
+        FILE* fp = fopen(ptr->phone, "a");
+        if (!fp)
+        {
+            perror("ERROR!");
+        }
+        fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%ld\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time, ptr->Good->name, ptr->Good->p_type);
+        fclose(fp);
 
-    //删除订单
-    shelves[ptr->status - 'A'].current_count -= 1;
-    list* tmp = Find_char_list(ptr->order_id, user->head);
-    free(order->Good);
-    Delete_list(&tmp, &user->head, &user->tail, &user->length);
-    RBTreeNode* ntmp = Find_key(ptr->phone, *Root);
-    RBTreeNode* ntmp1 = Find_key(ptr->shelf, shelves[ptr->shelf[0] - 'A'].tree);
-    Delete(&ntmp, Root);
-    Delete(&ntmp1, &shelves[ptr->shelf[0] - 'A'].tree);
-    free(ptr);
+        //删除订单
+        shelves[ptr->status - 'A'].current_count -= 1;
+        list* tmp = Find_char_list(ptr->order_id, user->head);
+        free(order->Good);
+        Delete_list(&tmp, &user->head, &user->tail, &user->length);
+        RBTreeNode* ntmp = Find_key(ptr->phone, *Root);
+        RBTreeNode* ntmp1 = Find_key(ptr->shelf, shelves[ptr->shelf[0] - 'A'].tree);
+        Delete(&ntmp, Root);
+        Delete(&ntmp1, &shelves[ptr->shelf[0] - 'A'].tree);
+        free(ptr);
+    }
 }
 void Inquiry_order(RBTree* Root, char* order_id) {
     RBTreeNode* tmp = Find_key(order_id, Root);
@@ -1424,14 +1414,11 @@ void check_all_orders_for_overdue(HashTable* ht) {
 
 
 //-------------------------------------------------------------
-
 typedef struct {
     char admin_password[50];  // 存储密码字符串
     int capacity_threshold;   // 存储整数型阈值
     //  int money;
 } SystemConfig;
-
-
 int load_config(SystemConfig* config) {
     FILE* fp = fopen("config.cfg", "r");
     if (!fp) return 0; // 文件不存在返回0
@@ -1475,7 +1462,6 @@ void init_default_config() {
     save_config(&default_config);
 }
 
-
 void read_from_file(FILE* load, RBTree** Root) {
     while (1) {
         char mima[20];
@@ -1492,9 +1478,9 @@ void read_from_file(FILE* load, RBTree** Root) {
         }
         ptr->Good = Goods;
         if (fscanf(load, "%50s", ptr->Good->name) != 1) {
-                free(ptr->Good);
-                free(ptr);
-                break;
+            free(ptr->Good);
+            free(ptr);
+            break;
         }
         if (fscanf(load, "%d", &(ptr->Good->p_type)) != 1) {
             free(ptr->Good);
@@ -1507,7 +1493,7 @@ void read_from_file(FILE* load, RBTree** Root) {
             free(ptr);
             break;
         }
-     
+
         generateOrderNumber(ptr->order_id);
         RBTreeNode* tmp = (RBTreeNode*)malloc(sizeof(RBTreeNode));
         ptr->create_time = time(NULL);
@@ -1540,7 +1526,7 @@ void read_from_file(FILE* load, RBTree** Root) {
             free(ptr);
             break;
         }
-        if (!strcpy(mima,user->mima))
+        if (!strcpy(mima, user->mima))
         {
             free(tmp);
             free(ptr->Good);
@@ -1593,7 +1579,6 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config);
 void printAllOrders(RBTree* Root);
 void registerUser(HashTable* ht);
 
-
 // 显示菜单
 void displayMenu(void) {
     printf("\n快递管理系统菜单:\n");
@@ -1606,6 +1591,7 @@ void displayMenu(void) {
     printf("7. 退出\n");
     printf("请输入你的选择: \n");
 }
+
 
 // 处理用户输入
 void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int* x) {
@@ -1623,64 +1609,64 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         printf("3. 货物异常情况登记\n");
         printf("请输入你的选择\n");
         int n;
-        scanf_s("%d",&n);
+        scanf_s("%d", &n);
         getchar();
-        switch(n){
-            case 1:
+        switch (n) {
+        case 1:
             GenerateOrder(Root);
             break;
-            case 2:
-            Pickup(Root,1);
+        case 2:
+            Pickup(Root, 1);
             break;
-            case 3:
-              printf("请输入异常包裹的订单号\n");
-                char order_id[20];
-                scanf_s("%s",order_id,sizeof(order_id));
-                getchar();
-                printf("\n设置包裹异常属性:\n");
-                printf("1. 丢失\n");
-                printf("2. 损坏\n");
-                printf("3. 超期滞留\n");
-                printf("4. 信息错误\n");
-                printf("输入你的选择\n");  
-                   int n;
-                scanf_s("%d",&n);
-                getchar();
-                const char*type_str;
-        switch (n-1) {
-        case LOST:
-            type_str = "丢失";
-            break;
-        case DAMAGED:
-            type_str = "损坏";
-            break;
-        case OVERDUE_STAY:
-            type_str = "超期滞留";
-            break;
-        case INFORMATION_ERROR:
-            type_str = "信息错误";
-            break;
-        default:
-            type_str = "未知异常";
-            break;
-        }
-                 PackageException exception = {
-                 PackageExceptionType(n-1),
-                 time(NULL),
-                 order_id
-                };
-                printf("请输出异常描述\n");
-                scanf_s("%s",exception.description,sizeof(exception.description));
-                getchar();
-                log_exception(&exception);
-                printf("包裹异常属性设置完成\n");
-                break;            default:
-                printf("输入不合法\n");
+        case 3:
+            printf("请输入异常包裹的订单号\n");
+            char order_id[20];
+            scanf_s("%s", order_id, sizeof(order_id));
+            getchar();
+            printf("\n设置包裹异常属性:\n");
+            printf("1. 丢失\n");
+            printf("2. 损坏\n");
+            printf("3. 超期滞留\n");
+            printf("4. 信息错误\n");
+            printf("输入你的选择\n");
+            int n;
+            scanf_s("%d", &n);
+            getchar();
+            const char* type_str;
+            switch (n - 1) {
+            case LOST:
+                type_str = "丢失";
                 break;
+            case DAMAGED:
+                type_str = "损坏";
+                break;
+            case OVERDUE_STAY:
+                type_str = "超期滞留";
+                break;
+            case INFORMATION_ERROR:
+                type_str = "信息错误";
+                break;
+            default:
+                type_str = "未知异常";
+                break;
+            }
+            PackageException exception = {
+            n - 1,
+            time(NULL),
+            order_id
+            };
+            printf("请输出异常描述\n");
+            scanf_s("%s", exception.description, sizeof(exception.description));
+            getchar();
+            log_exception(&exception);
+            printf("包裹异常属性设置完成\n");
+        break;            default:
+            printf("输入不合法\n");
+            break;
         }
         break;
     case 2: {
-        Pickup(Root,0);
+        Pickup(Root, 0);
         break;
     }
     case 3: {
@@ -1722,11 +1708,11 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         }
         printf("请输入密码\n");
         scanf_s("%s", mima, sizeof(mima));
-        if (!strcpy(mima, user->mima))
+        if (!strcmp(mima, user->mima))
         {
             printf("\n登陆成功\n");
         }
-        else{
+        else {
             printf("密码输入错误\n");
             break;
         }
@@ -1734,27 +1720,31 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         printf("2. 取件\n");
         printf("请输入你的选择\n");
         int k;
-        scanf_s("%d",&k);
-        switch(k)
-            {
-                case 1:
-                
-        list* temp = user->head->next;
-        while (temp)
+        scanf_s("%d", &k);
+        switch (k)
         {
-            printf("订单号为%s\n", temp->data->order_id);
-            printf("货物位置为%s\n", temp->data->shelf);
-            printf("--------------------------------");
-            temp = temp->next;
-        }
-        printf("请输入要查询的订单编号: ");
-        scanf_s("%s", package_id, sizeof(package_id));
-        query_package_exceptions(package_id);
-        break;
-                case 2:
-                Pickup(Root,0);
-                
+        case 1:
+            list* temp = user->head->next;
+            if (!temp)
+            {
+                printf("没有货物\n");
+                break;
             }
+            while (temp)
+            {
+                printf("订单号为%s\n", temp->data->order_id);
+                printf("货物位置为%s\n", temp->data->shelf);
+                printf("--------------------------------");
+                temp = temp->next;
+            }
+            printf("请输入要查询的订单编号: ");
+            scanf_s("%s", package_id, sizeof(package_id));
+            query_package_exceptions(package_id);
+            break;
+        case 2:
+            Pickup(Root, 0);
+            break;
+        }
 
         break;
     }
@@ -1763,6 +1753,7 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         printf("无效的选择，请重新输入\n");
     }
 }
+
 
 // 管理员接口
 // 查看各货架属性
@@ -1808,11 +1799,10 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             printf("2. 查看各货架属性\n");
             printf("3. 遍历特定货架的树\n");
             printf("4. 重新设置管理员密码\n");
-            printf("5. 设置包裹异常属性\n);
+            printf("5. 设置包裹异常属性\n");
             printf("6. 重新设置员工密码");
             printf("7. 查看日志\n");
             printf("8. 退出管理员模式\n");
-            
             printf("请输入你的选择: \n");
             scanf("%d", &choice);
             getchar(); // 消耗掉换行符
@@ -1840,7 +1830,7 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             case 5:
                 printf("请输入异常包裹的订单号\n");
                 char order_id[20];
-                scanf_s("%s",order_id,sizeof(order_id));
+                scanf_s("%s", order_id, sizeof(order_id));
                 getchar();
                 printf("\n设置包裹异常属性:\n");
                 printf("1. 丢失\n");
@@ -1848,50 +1838,50 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 printf("3. 超期滞留\n");
                 printf("4. 信息错误\n");
                 printf("5. 未知异常\n");
-                printf("输入你的选择\n");  
-                   int n;
-                scanf_s("%d",&n);
+                printf("输入你的选择\n");
+                int n;
+                scanf_s("%d", &n);
                 getchar();
-                const char*type_str;
-        switch (n-1) {
-        case LOST:
-            type_str = "丢失";
-            break;
-        case DAMAGED:
-            type_str = "损坏";
-            break;
-        case OVERDUE_STAY:
-            type_str = "超期滞留";
-            break;
-        case INFORMATION_ERROR:
-            type_str = "信息错误";
-            break;
-        default:
-            type_str = "未知异常";
-            break;
-        }
-                 PackageException exception = {
-                 PackageExceptionType(n-1),
-                 time(NULL),
-                 order_id
+                const char* type_str;
+                switch (n - 1) {
+                case LOST:
+                    type_str = "丢失";
+                    break;
+                case DAMAGED:
+                    type_str = "损坏";
+                    break;
+                case OVERDUE_STAY:
+                    type_str = "超期滞留";
+                    break;
+                case INFORMATION_ERROR:
+                    type_str = "信息错误";
+                    break;
+                default:
+                    type_str = "未知异常";
+                    break;
+                }
+                PackageException exception = {
+                (n - 1),
+                time(NULL),
+                order_id
                 };
                 printf("请输出异常描述\n");
-                scanf_s("%s",exception.description,sizeof(exception.description));
+                scanf_s("%s", exception.description, sizeof(exception.description));
                 getchar();
                 log_exception(&exception);
                 printf("包裹异常属性设置完成\n");
                 break;
-                case 6:
+            case 6:
                 /*
                     改变员工的密码
                 */
                 break;
-                case 7:
+            case 7:
                 /*
                     查看日志
                 */
                 break;
-            case 8:  
+            case 8:
                 printf("退出管理员模式\n");
                 return;
             default:
@@ -1923,15 +1913,15 @@ void registerUser(HashTable* ht) {
     char check_mima[20];
     int userType;
 
-    printf("请输入手机号: \n");
+    printf("请输入手机号: ");
     scanf_s("%s", phone, sizeof(phone));
     getchar(); // 消耗掉换行符
     User* user = hash_search(ht, phone);
     if (user) {
-        printf("用户已注册 \n");
+        printf("用户已注册");
         return;
     }
-    printf("请输入姓名: \n");
+    printf("请输入姓名: ");
     scanf_s("%s", name, sizeof(name));
     getchar(); // 消耗掉换行符
 
@@ -1999,4 +1989,3 @@ void query_package_exceptions(const char* package_id) {
 //    // 备份财务表
 //    copy_file("finance.txt", dir_name);
 //}
-
