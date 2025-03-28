@@ -7,7 +7,7 @@ int main()
 {
 
     // 初始化哈希表
-   
+
     init_shelves();
     SystemConfig sys_config;
     ht = hash_init(1009);
