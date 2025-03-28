@@ -1,5 +1,3 @@
-
-
 #include "head.h"
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -25,7 +23,6 @@ int main()
     FILE* load = fopen("test.txt", "r");
     if (!load)
     {
-        
         perror("test.txt cannot be opened!");
     }
     // 从文件读取数据
