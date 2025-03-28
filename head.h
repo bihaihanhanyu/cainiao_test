@@ -1141,8 +1141,10 @@ int confirm_outbound(OutboundOrder* order) {
     printf("\n====== 出库二次确认 ======\n");
     printf("订单号: %s\n电话: %s\n", order->order_id, order->phone);
 
+    printf("输入Y(y)确定出库\n");
     // 确认逻辑
     char confirm;
+    
     scanf_s(" %c", &confirm);
 
     if (confirm == 'Y' || confirm == 'y') {
@@ -1709,8 +1711,9 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             printf("2. 查看各货架属性\n");
             printf("3. 遍历特定货架的树\n");
             printf("4. 重新设置管理员密码\n");
-            printf("5. 退出管理员模式\n");
-            printf("请输入你的选择: ");
+            printf("5. 设置包裹异常属性\n);
+            printf("6. 退出管理员模式\n");
+            printf("请输入你的选择: \n");
             scanf("%d", &choice);
             getchar(); // 消耗掉换行符
 
@@ -1735,6 +1738,49 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 save_config(&sys_config);
                 break;
             case 5:
+                printf("请输入异常包裹的订单号\n");
+                char order_id[20];
+                scanf_s("%s",order_id,sizeof(order_id));
+                getchar();
+                printf("\n设置包裹异常属性:\n");
+                printf("1. 丢失\n");
+                printf("2. 损坏\n");
+                printf("3. 超期滞留\n");
+                printf("4. 信息错误\n");
+                printf("输入你的选择\n");  
+                   int n;
+                scanf_s("%d",&n);
+                getchar();
+                const char*type_str;
+        switch (n-1) {
+        case LOST:
+            type_str = "丢失";
+            break;
+        case DAMAGED:
+            type_str = "损坏";
+            break;
+        case OVERDUE_STAY:
+            type_str = "超期滞留";
+            break;
+        case INFORMATION_ERROR:
+            type_str = "信息错误";
+            break;
+        default:
+            type_str = "未知异常";
+            break;
+        }
+                 PackageException exception = {
+                 PackageExceptionType(n-1),
+                 time(NULL),
+                 order_id
+                };
+                printf("请输出异常描述\n");
+                scanf_s("%s",exception.description,sizeof(exception.description));
+                getchar();
+                log_exception(&exception);
+                printf("包裹异常属性设置完成\n");
+                break;
+            case 6:  
                 printf("退出管理员模式\n");
                 return;
             default:
