@@ -356,6 +356,8 @@ void hash_insert(HashTable* ht, const char* phone, const char* name, const char*
     ht->count++;
 }
 User* hash_search(HashTable* ht, const char* phone) {
+    if (!ht)
+        return NULL;
     unsigned int index = hash_func(phone, ht->size);
     User* node = ht->buckets[index];
 
@@ -1417,7 +1419,7 @@ void check_all_orders_for_overdue(HashTable* ht) {
 typedef struct {
     char admin_password[50];  // 存储密码字符串
     int capacity_threshold;   // 存储整数型阈值
-    //  int money;
+    char staff_pass[50];
 } SystemConfig;
 int load_config(SystemConfig* config) {
     FILE* fp = fopen("config.cfg", "r");
@@ -1438,6 +1440,9 @@ int load_config(SystemConfig* config) {
         }
         else if (strcmp(key, "capacity_threshold") == 0) {
             config->capacity_threshold = atoi(value); // 字符串转整数
+        }
+        else if (strcmp(key, "staff_pass") == 0) {
+            strcpy(config->staff_pass, value);
         }
     }
     fclose(fp);
@@ -1601,70 +1606,74 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
 
     switch (choice) {
     case 1:
-        /*
-        员工登陆的部分
-        */
-        printf("1. 创建新订单\n");
-        printf("2. 取件\n");
-        printf("3. 货物异常情况登记\n");
-        printf("请输入你的选择\n");
-        int n;
-        scanf_s("%d", &n);
-        getchar();
-        switch (n) {
-        case 1:
-            GenerateOrder(Root);
-            break;
-        case 2:
-            Pickup(Root, 1);
-            break;
-        case 3:
-            printf("请输入异常包裹的订单号\n");
-            char order_id[20];
-            scanf_s("%s", order_id, sizeof(order_id));
-            getchar();
-            printf("\n设置包裹异常属性:\n");
-            printf("1. 丢失\n");
-            printf("2. 损坏\n");
-            printf("3. 超期滞留\n");
-            printf("4. 信息错误\n");
-            printf("输入你的选择\n");
+        printf("请输入员工密码: ");
+        char password[50];
+        scanf_s("%s", password, sizeof(password));
+        getchar(); // 消耗掉换行符
+
+        if (strcmp(password, sys_config->staff_pass) == 0) {
+            printf("密码正确，进入员工模式\n");
+            printf("1. 创建新订单\n");
+            printf("2. 取件\n");
+            printf("3. 货物异常情况登记\n");
+            printf("请输入你的选择\n");
             int n;
             scanf_s("%d", &n);
             getchar();
-            const char* type_str;
-            switch (n - 1) {
-            case LOST:
-                type_str = "丢失";
+            switch (n) {
+            case 1:
+                GenerateOrder(Root);
                 break;
-            case DAMAGED:
-                type_str = "损坏";
+            case 2:
+                Pickup(Root, 1);
                 break;
-            case OVERDUE_STAY:
-                type_str = "超期滞留";
-                break;
-            case INFORMATION_ERROR:
-                type_str = "信息错误";
-                break;
-            default:
-                type_str = "未知异常";
+            case 3:
+                printf("请输入异常包裹的订单号\n");
+                char order_id[20];
+                scanf_s("%s", order_id, sizeof(order_id));
+                getchar();
+                printf("\n设置包裹异常属性:\n");
+                printf("1. 丢失\n");
+                printf("2. 损坏\n");
+                printf("3. 超期滞留\n");
+                printf("4. 信息错误\n");
+                printf("输入你的选择\n");
+                int n;
+                scanf_s("%d", &n);
+                getchar();
+                const char* type_str;
+                switch (n - 1) {
+                case LOST:
+                    type_str = "丢失";
+                    break;
+                case DAMAGED:
+                    type_str = "损坏";
+                    break;
+                case OVERDUE_STAY:
+                    type_str = "超期滞留";
+                    break;
+                case INFORMATION_ERROR:
+                    type_str = "信息错误";
+                    break;
+                default:
+                    type_str = "未知异常";
+                    break;
+                }
+                PackageException exception = {
+                n - 1,
+                time(NULL),
+                order_id
+                };
+                printf("请输出异常描述\n");
+                scanf_s("%s", exception.description, sizeof(exception.description));
+                getchar();
+                log_exception(&exception);
+                printf("包裹异常属性设置完成\n");
+            break;            default:
+                printf("输入不合法\n");
                 break;
             }
-            PackageException exception = {
-            n - 1,
-            time(NULL),
-            order_id
-            };
-            printf("请输出异常描述\n");
-            scanf_s("%s", exception.description, sizeof(exception.description));
-            getchar();
-            log_exception(&exception);
-            printf("包裹异常属性设置完成\n");
-        break;            default:
-            printf("输入不合法\n");
             break;
-        }
-        break;
     case 2: {
         Pickup(Root, 0);
         break;
@@ -1724,7 +1733,7 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         switch (k)
         {
         case 1:
-            list* temp = user->head->next;
+            list * temp = user->head->next;
             if (!temp)
             {
                 printf("没有货物\n");
@@ -1751,8 +1760,10 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
 
     default:
         printf("无效的选择，请重新输入\n");
+        }
     }
 }
+
 
 
 // 管理员接口
@@ -1824,8 +1835,14 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             }
             case 4:
                 printf("请输入新密码");
-                scanf_s("%s", sys_config->admin_password, sizeof(sys_config->admin_password));
-                save_config(&sys_config);
+                char newpassword[50];
+
+                scanf_s("%s", newpassword, sizeof(newpassword));
+                strncpy((*sys_config).admin_password, newpassword, sizeof((*sys_config).admin_password) - 1);
+                (*sys_config).admin_password[sizeof((*sys_config).admin_password) - 1] = '\0';
+
+                save_config(sys_config);
+
                 break;
             case 5:
                 printf("请输入异常包裹的订单号\n");
@@ -1948,7 +1965,6 @@ void registerUser(HashTable* ht) {
 void query_package_exceptions(const char* package_id) {
     FILE* log_file = fopen("exception.log", "r");
     if (log_file == NULL) return;
-
     char line[256];
     while (fgets(line, sizeof(line), log_file)) {
         if (strstr(line, package_id) != NULL) {
@@ -1957,7 +1973,38 @@ void query_package_exceptions(const char* package_id) {
     }
     fclose(log_file);
 }
+void read_registered_users_from_file(FILE* load, HashTable* ht) {
+    while (1) {
+        char phone[20];
+        char name[30];
+        char mima[20];
+        int userType;
 
+        if (fscanf(load, "%19s", phone) != 1) {
+            break;
+        }
+        User* user = hash_search(ht, phone);
+        if (user) {
+            printf("用户 %s 已注册\n", phone);
+            continue;
+        }
+
+        if (fscanf(load, "%29s", name) != 1) {
+            break;
+        }
+
+        if (fscanf(load, "%19s", mima) != 1) {
+            break;
+        }
+
+        if (fscanf(load, "%d", &userType) != 1) {
+            break;
+        }
+
+        hash_insert(ht, phone, name, mima, (UserType)userType);
+        printf("用户 %s 注册成功\n", phone);
+    }
+}
 //void copy_file(const char* src, const char* dest_dir) {
 //    char dest_path[100];
 //    sprintf(dest_path, "%s/%s", dest_dir, src);
