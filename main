@@ -52,6 +52,7 @@ int main()
     // 显示菜单并处理用户输入
     int x = 1;
     while (x) {
+        check_all_orders_for_overdue(ht);
         displayMenu();
         handleUserInput(&Root, ht, &sys_config, &x);
     }
