@@ -16,6 +16,7 @@ void generate_random_word(char* word) {
     word[length] = '\0';
 }
 
+
 // 生成 11 位手机号
 void generate_phone_number(char* phone) {
     phone[0] = '1';
