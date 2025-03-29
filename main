@@ -5,9 +5,7 @@
 
 int main()
 {
-
     // 初始化哈希表
-
     init_shelves();
     SystemConfig sys_config;
     ht = hash_init(1009);
@@ -20,16 +18,31 @@ int main()
         init_default_config();
         load_config(&sys_config); // 重新加载
     }
-    FILE* load = fopen("test.txt", "r");
-    if (!load)
+    FILE* load1 = fopen("user_registration.txt", "r");
+    if (!load1)
+    {
+        perror("user_registration.txt cannot be opened!");
+    }
+    // 从文件读取数据
+    else {
+        read_registered_users_from_file(load1, ht);
+        if (load1)
+            fclose(load1);
+    }
+
+
+
+
+    FILE* load2 = fopen("test.txt", "r");
+    if (!load2)
     {
         perror("test.txt cannot be opened!");
     }
     // 从文件读取数据
     else {
-        read_from_file(load, &Root);
-        if (load)
-            fclose(load);
+        read_from_file(load2, &Root);
+        if (load2)
+            fclose(load2);
     }
     // 使用配置参数
     printf("当前管理员密码：%s\n", sys_config.admin_password);
