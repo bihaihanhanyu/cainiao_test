@@ -1873,10 +1873,14 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 printf("包裹异常属性设置完成\n");
                 break;
             case 6:
-                /*
-                    改变员工的密码
-                */
-                break;
+                printf("请输入新密码");
+                char newpassword1[50];
+
+                scanf_s("%s", newpassword1, sizeof(newpassword1));
+                strncpy((*sys_config).staff_pass, newpassword1, sizeof((*sys_config).staff_pass) - 1);
+                (*sys_config).staff_pass[sizeof((*sys_config).staff_pass) - 1] = '\0';
+
+                save_config(sys_config);
             case 7:
                 /*
                     查看日志
