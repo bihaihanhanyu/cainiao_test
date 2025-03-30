@@ -10,8 +10,10 @@ int main()
     SystemConfig sys_config;
     ht = hash_init(1009);
     srand((int)time(NULL)); // 只设置一次随机数种子
-    RBTree* Root = (RBTree*)malloc(sizeof(RBTree));
+    Root = (RBTree*)malloc(sizeof(RBTree));
     Root->root = NULL;
+    trace = (RBTree*)malloc(sizeof(RBTree));
+    trace->root = NULL;
     // 尝试加载配置
     if (!load_config(&sys_config)) {
         printf("配置文件不存在，创建默认配置...\n");
@@ -47,9 +49,9 @@ int main()
     // 使用配置参数
     printf("当前管理员密码：%s\n", sys_config.admin_password);
     printf("当前容量阈值：%d\n", sys_config.capacity_threshold);
-
-
     // 显示菜单并处理用户输入
+    In_order(Root->root);
+    Pre_order(Root->root);
     int x = 1;
     while (x) {
         check_all_orders_for_overdue(ht);
@@ -62,6 +64,8 @@ int main()
     for (int i = 0; i < 6; i++) {
         Clear_RBTREE(shelves[i].tree->root);
         free(shelves[i].tree);
+        free(shelf_trace[i]);
     }
+    free(trace);
     return 0;
 }
