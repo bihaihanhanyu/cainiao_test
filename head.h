@@ -1889,14 +1889,29 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 scanf_s("%d",&xuanze);
                 getchar();
                 while(xuanzede)
-                switch (xuanze)
-                {case 1:
-                    /*
-                    */
+                    switch (xuanze)
+                    {
+                    case 1:{
+                        printf("请输入手机号: \n");
+                        scanf_s("%s", package_id, sizeof(package_id));
+                        getchar();
+                        FILE* fp3 = fopen(package_id, "r");
+                        if (fp3 == NULL) {
+                            perror("文件打开失败");
+                            return 1;
+                        }
+                        char ch;
+                        // 从文件中读取字符并输出到屏幕
+                        while ((ch = fgetc(fp3)) != EOF) {
+                            putchar(ch);
+                        }
+                        fclose(fp3);
+                    }
                     break;
                 case 2:
-                    printf("请输入要查询的订单编号: ");
+                    printf("请输入要查询的订单编号: \n");
                     scanf_s("%s", package_id, sizeof(package_id));
+                    getchar();
                     query_package_exceptions(package_id);
                     break;
                 case 3:
