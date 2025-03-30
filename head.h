@@ -29,7 +29,6 @@ typedef struct PackageException {
     char package_id[40];
     char description[50]; // 异常描述
 } PackageException;
-
 typedef enum UserType {
     STUDENT,    // 学生 0.9
     TEACHER,    // 教师 0.85
@@ -62,8 +61,6 @@ typedef struct {
     int status;           // 状态标记（0=待出库，1=已出库）
     goods* Good;//货物订单
 } OutboundOrder;
-
-
 void log_exception(const PackageException* exception) {
     FILE* log_file = fopen("exception.log", "a"); // 追加模式
     if (log_file != NULL) {
@@ -95,10 +92,6 @@ void log_exception(const PackageException* exception) {
         fclose(log_file);
     }
 }
-
-
-
-
 //#include <pthread.h> // 提供线程相关的函数和数据类型，用于创建和管理线程#ifdef _WIN32
    // Windows-specific code
 typedef struct  List list;
@@ -108,7 +101,6 @@ struct List {
     list* pre;//前一项
     list* next;//后一项
 };
-
 static void Isolate_list(list* temp, list* tail);
 //type 1 第2种链表,head不存内容
 void Add_list(list** head, OutboundOrder** ndata, list** tail, int* length)//尾插法
@@ -118,8 +110,10 @@ void Add_list(list** head, OutboundOrder** ndata, list** tail, int* length)//尾
     temp->data = *ndata;
     temp->next = NULL;
     temp->pre = NULL;
-    if ((*head)->next == NULL)
+    if ((*head)->next == NULL) {
         *tail = (*head)->next = temp;
+        temp->pre = (*head);
+    }
     else {
         (*tail)->next = temp;
         temp->pre = *tail;
@@ -136,8 +130,10 @@ list* Find_list(list* head, int num)//返回第num个链表的位置
 }
 void Delete_list(list** p, list** head, list** tail, int* length)
 {
-    if (*p == *head)
+    if (*p == *head) {
         perror("You cannot delete head ptr.");
+        return;
+    }
     if (*length == 1)
         (*head)->next = (*tail) = NULL;
     else
@@ -260,7 +256,6 @@ int Empty_list(list* head)
 {
     return head->next == NULL;
 }
-
 //--------------------------------------------------------------------------------------------
 struct Logistic;
 struct User;
@@ -279,7 +274,6 @@ struct Order;
  领或冒锈、拒收
 
  */
-
 typedef struct User {//用户
     char tel[12];//还需要手机号和联系方式
     UserType u_type;//不同级别用户
@@ -361,7 +355,6 @@ User* hash_search(HashTable* ht, const char* phone) {
         return NULL;
     unsigned int index = hash_func(phone, ht->size);
     User* node = ht->buckets[index];
-    printf("hello world!");
     while (node) {
         if (strcmp(node->tel, phone) == 0) {
             return node;
@@ -420,7 +413,6 @@ void hash_load(HashTable* ht, const char* filename) {
     }
     fclose(fp);
 }
-
 float calculateMoney(User* user, struct Goods* goods, float base_prise)
 {
     float userDiscount[5] = { 0.85,0.9,0.75,0.8 };
@@ -439,7 +431,6 @@ float calculateMoney(User* user, struct Goods* goods, float base_prise)
     return base_prise * userDiscount[temp_ut] * packageDiscount[temp_pt] * weightDiscount;
 }
 //---------------------------------------------------------------------------------------------
-
 time_t get_current_timestamp(void) {
     return time(NULL); // 获取当前系统时间（秒级精度）
 }
@@ -449,12 +440,10 @@ typedef struct {
     char package_id[20];    // 关联包裹编号
     char operator_id[20];   // 操作员ID
 } OperationLog;
-
 void format_time(time_t timestamp, char* buffer) {
     struct tm* tm_info = localtime(&timestamp);
     strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", tm_info);
 }
-
 int log_operation(const char* operation, const char* package_id, const char* operator_id) {
     FILE* log_file = fopen("operation.log", "a"); // 追加模式
     if (log_file != NULL) {
@@ -469,8 +458,6 @@ int log_operation(const char* operation, const char* package_id, const char* ope
     }
     return 0; // 打开文件失败
 }
-
-
 void trace_package(const char* target_id) {
     FILE* log_file = fopen("operation.log", "r");
     if (log_file == NULL) return;
@@ -483,7 +470,6 @@ void trace_package(const char* target_id) {
     }
     fclose(log_file);
 }
-
 //-----------------------------------------------------------把-------------------------
 typedef enum { BLACK, RED }Color;
 typedef struct RBTreeNode {//红黑树节点
@@ -501,7 +487,6 @@ typedef struct double_black {
     RBTreeNode* point;
 }double_black;
 RBTree* Root;
-RBTree* trace;
 //创建红黑树
 //创建的是根结点
 //下面的四种LL,RR,RK,LR是针对插入新节点的状况的插入策略，和颜色改变策略
@@ -512,7 +497,10 @@ void LL(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
     father->color = BLACK;
     grandpa->color = RED;
     if (grandpa == (*Root)->root)//处理grandpa之前的情况
+    {
         (*Root)->root = father;
+        father->parent = NULL;
+    }
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -535,7 +523,10 @@ void RR(RBTree** Root, RBTreeNode** cur)//对RR情况的旋转
     father->color = BLACK;
     grandpa->color = RED;
     if (grandpa == (*Root)->root)//处理grandpa之前的情况
+    {
         (*Root)->root = father;
+        father->parent = NULL;
+    }
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -557,11 +548,16 @@ void RL(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
     RBTreeNode* grandpa = father->parent;
     (*cur)->color = BLACK;
     grandpa->color = RED;
+    father->left = (*cur)->right;
+    if ((*cur)->right)
+        (*cur)->right->parent = father;
     (*cur)->right = father;
     father->parent = (*cur);
-    father->left = NULL;
     if (grandpa == (*Root)->root)
+    {
         (*Root)->root = *cur;
+        (*cur)->parent = NULL;
+    }
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
@@ -570,9 +566,11 @@ void RL(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
         else grand_fa->left = *cur;
         (*cur)->parent = grand_fa;
     }
+    grandpa->right = (*cur)->left;
+    if ((*cur)->left)
+        (*cur)->left->parent = grandpa;
     (*cur)->left = grandpa;
     grandpa->parent = *cur;
-    grandpa->right = NULL;
 }
 void LR(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
 {
@@ -580,11 +578,16 @@ void LR(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
     RBTreeNode* grandpa = father->parent;
     (*cur)->color = BLACK;
     grandpa->color = RED;
+    father->right = (*cur)->left;
+    if ((*cur)->left)
+        (*cur)->left->parent = father;
     (*cur)->left = father;
     father->parent = *cur;
-    father->right = NULL;
     if (grandpa == (*Root)->root)
+    {
         (*Root)->root = *cur;
+        (*cur)->parent = NULL;
+    }
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
@@ -593,22 +596,23 @@ void LR(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
         else grand_fa->left = *cur;
         (*cur)->parent = grand_fa;
     }
+    grandpa->left = (*cur)->right;
+    if ((*cur)->right)
+        (*cur)->right->parent = grandpa;
     (*cur)->right = grandpa;
     grandpa->parent = *cur;
-    grandpa->left = NULL;
 }
-RBTreeNode* newNode(char key[20], RBTree** Root, OutboundOrder** ptr, RBTree** trace )
+RBTreeNode* newNode(char key[20], RBTree** Root, OutboundOrder** ptr)
 {
     RBTreeNode* tmp = (RBTreeNode*)malloc(sizeof(RBTreeNode));
     (*Root)->root = tmp;
-    (*trace)->root = tmp;
     strcpy(tmp->key, key);
     tmp->parent = tmp->left = tmp->right = NULL;
     tmp->color = BLACK;
     tmp->ptr = *ptr;
+    RBTree* tmp01 = *Root;
     return tmp;
 }
-
 RBTree* fixInsert(RBTree** Root, RBTreeNode** cur)//Root->root是根结点
 {
     //插入新节点默认为红节点，如果违反问题一定只有根黑，和红红两种情况
@@ -618,13 +622,19 @@ RBTree* fixInsert(RBTree** Root, RBTreeNode** cur)//Root->root是根结点
         return *Root;
     }
     //红红
-    if ((*cur)->parent->color == RED)
+    while((*cur)->parent && (*cur)->parent->color == RED)
+    //if ((*cur)->parent && (*cur)->parent->color == RED)
         //红红有很多种情况
     {
         //先找叔叔和爷爷
-        RBTreeNode*uncle;
-        RBTreeNode*grandpa;
-           grandpa = (*cur)->parent->parent;
+        RBTreeNode* uncle;
+        RBTreeNode* grandpa;
+        grandpa = (*cur)->parent->parent;
+        if (!grandpa)
+        {
+            (*cur)->parent->color = BLACK;
+            break;
+        }
         if ((*cur)->parent == grandpa->right)
            uncle =grandpa->left;
         else uncle = grandpa->right;
@@ -634,6 +644,7 @@ RBTree* fixInsert(RBTree** Root, RBTreeNode** cur)//Root->root是根结点
             //在叔叔是红色的情况下，叔父爷变色，且cur指向爷爷,爷爷一定是黑色
             (*cur)->parent->color = uncle->color = BLACK;
             grandpa->color = RED;
+            //*cur=grandpa;
             return fixInsert(Root, &grandpa);
         }
         else//叔叔是黑色(包含NULL)
@@ -643,60 +654,61 @@ RBTree* fixInsert(RBTree** Root, RBTreeNode** cur)//Root->root是根结点
                 if ((*cur)->parent->left == *cur)//RL
                 {
                     RL(Root, cur);
-                    return *Root;
+                    break;
                 }
                 else {//RR
                     RR(Root, cur);
-                    return *Root;
+                    break;
                 }
             }
             else {//L
                 if ((*cur)->parent->left == *cur)//LL
                 {
                     LL(Root, cur);
-                    return *Root;
+                    break;
                 }
                 else {//LR
                     LR(Root, cur);
-                    return *Root;
+                    break;
                 }
             }
         }
     }
+    (*Root)->root->color = BLACK;
     return *Root;
 
 }
 //加入新节点
-RBTreeNode* Add_node(char key[20], RBTree** Root,OutboundOrder** ptr, RBTree** trace )
+RBTreeNode* Add_node(char key[20], RBTree** Root,OutboundOrder** ptr)
 {
     RBTreeNode* cur = (RBTreeNode*)malloc(sizeof(RBTreeNode));
-    (*trace)->root = (*Root)->root;
+   RBTreeNode*trace = (*Root)->root;
     strcpy(cur->key, key);
     cur->ptr = *ptr;
     cur->color = RED;
     cur->left = cur->right = NULL;
     int i = 1;
     while (i) {
-        if (strcmp(key, (*trace)->root->key) == 0)
+        if (strcmp(key, trace->key) == 0)
             return NULL;
-        if (strcmp(key, (*trace)->root->key) > 0) {
-            if ((*trace)->root->right != NULL)
-                (*trace)->root= (*trace)->root->right;
+        if (strcmp(key, trace->key) > 0) {
+            if (trace->right != NULL)
+                trace = trace->right;
             else {
-                (*trace)->root->right = cur;
+                trace->right = cur;
                 i = 0;
             }
         }
         else {
-            if ((*trace)->root->left != NULL)
-                (*trace)->root = (*trace)->root->left;
+            if (trace->left != NULL)
+                trace= trace->left;
             else {
-                (*trace)->root->left = cur;
+                trace->left = cur;
                 i = 0;
             }
         }
     }
-    cur->parent = (*trace)->root;
+    cur->parent = trace;
     fixInsert(Root, &cur);//插入之后的调整
     return cur;
 }
@@ -704,7 +716,8 @@ RBTreeNode* Add_node(char key[20], RBTree** Root,OutboundOrder** ptr, RBTree** t
 void  Pre_order(RBTreeNode* root)//先序遍历   根左右
 {
     if (!root)
-        printf("there is NULL!\n");
+       // printf("there is NULL!\n");
+    return;
     printf(" \n%s\n", root->key);
     if (root->left != NULL)
         Pre_order(root->left);
@@ -713,19 +726,27 @@ void  Pre_order(RBTreeNode* root)//先序遍历   根左右
 }
 void In_order(RBTreeNode* root)//中序遍历   左根右
 {
+    if (!root)
+        // printf("there is NULL!\n");
+        return;
     if (root->left != NULL)
         In_order(root->left);
-    printf(" %s", root->key);
+    printf(" %s\n", root->key);
+// printf("%s\n", root->ptr->shelf);
+// printf("%s\n", root->ptr->order_id);
     if (root->right != NULL)
         In_order(root->right);
 }
 void Post_order(RBTreeNode* root)//后序遍历 左右根
 {
+    if (!root)
+        // printf("there is NULL!\n");
+        return;
     if (root->left != NULL)
         Post_order(root->left);
     if (root->right != NULL)
         Post_order(root->right);
-    printf(" %s", root->key);
+    printf(" %s\n", root->key);
 }
 //红黑树的删除源于二叉搜索树的删除
 //左右子树都有，用他左子树中的最大值或右子树的最小值代替他
@@ -750,7 +771,10 @@ void LL1(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
     RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
     if (grandpa == (*Root)->root)//处理grandpa之前的情况
+    {
         (*Root)->root = father;
+        father->parent = NULL;
+    }
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -759,8 +783,8 @@ void LL1(RBTree** Root, RBTreeNode** cur)//对LL情况的旋转
         father->parent = grand_fa;
     }
     //开始处理旋转
-    if (father->right != NULL) {
-        grandpa->left = father->right;
+    grandpa->left = father->right;
+    if (father->right != NULL) {     
         father->right->parent = grandpa;
     }
     father->right = grandpa;
@@ -771,7 +795,10 @@ void RR1(RBTree** Root, RBTreeNode** cur)//对RR情况的旋转
     RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
     if (grandpa == (*Root)->root)//处理grandpa之前的情况
+    {
         (*Root)->root = father;
+        father->parent = NULL;
+    }
     else {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
@@ -780,8 +807,8 @@ void RR1(RBTree** Root, RBTreeNode** cur)//对RR情况的旋转
         father->parent = grand_fa;
     }
     //开始处理旋转
+    grandpa->right = father->left;
     if (father->left != NULL) {
-        grandpa->right = father->left;
         father->left->parent = grandpa;
     }
     father->left = grandpa;
@@ -791,10 +818,15 @@ void RL1(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
 {
     RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
+    if ((*cur)->right)
+        (*cur)->right->parent = father;
     (*cur)->right = father;
-    father->parent = *cur;
+    father->parent = (*cur);
     if (grandpa == (*Root)->root)
+    {
         (*Root)->root = *cur;
+        (*cur)->parent = NULL;
+    }
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
@@ -803,6 +835,9 @@ void RL1(RBTree** Root, RBTreeNode** cur)//对RL情况的旋转
         else grand_fa->left = *cur;
         (*cur)->parent = grand_fa;
     }
+    grandpa->right = (*cur)->left;
+    if ((*cur)->left)
+        (*cur)->left->parent = grandpa;
     (*cur)->left = grandpa;
     grandpa->parent = *cur;
 }
@@ -810,18 +845,27 @@ void LR1(RBTree** Root, RBTreeNode** cur)//对LR情况的旋转
 {
     RBTreeNode* father = (*cur)->parent;
     RBTreeNode* grandpa = father->parent;
+    father->right = (*cur)->left;
+    if ((*cur)->left)
+        (*cur)->left->parent = father;
     (*cur)->left = father;
     father->parent = *cur;
     if (grandpa == (*Root)->root)
+    {
         (*Root)->root = *cur;
+        (*cur)->parent = NULL;
+    }
     else
     {
         RBTreeNode* grand_fa = grandpa->parent;
         if (grand_fa->right == grandpa)
-            grand_fa->right = cur;
-        else grand_fa->left = cur;
+            grand_fa->right = *cur;
+        else grand_fa->left = *cur;
         (*cur)->parent = grand_fa;
     }
+    grandpa->left = (*cur)->right;
+    if ((*cur)->right)
+        (*cur)->right->parent = grandpa;
     (*cur)->right = grandpa;
     grandpa->parent = *cur;
 }
@@ -842,7 +886,7 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
     RBTreeNode* father = cur->parent;
     RBTreeNode* siblings = (father->right == cur) ? father->left : father->right;
     //如果兄弟是红色节点-->父亲节点一定是黑色
-    if (!siblings&&siblings->color == RED)
+    if (siblings&&siblings->color == RED)
     {
         //兄父变色
         siblings->color = BLACK;
@@ -850,8 +894,10 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
         //朝着双黑方向旋转调整
         //一共只有两种情况
         //准备工作
-        if ((*Root)->root == father)
+        if ((*Root)->root == father) {
             (*Root)->root = siblings;
+            siblings->parent = NULL;
+        }
         else {
             RBTreeNode* grandpa = father->parent;
             if (grandpa->left == father)
@@ -881,7 +927,7 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
         RBTreeNode* Red;//红孩子
         if ((siblings->left != NULL && siblings->left->color == RED) || (siblings->right != NULL && siblings->right->color == RED))
         {
-            free(*Point);
+          
             //用 父亲，兄弟和他的红孩子判断是RR LL RL LR的哪一种
             //LL/RR型：r变s，s变p，p变黑 + 旋转（双黑变单黑)
             //LR/RL型：r变p，p变黑 + 旋转
@@ -894,14 +940,14 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
                     Red->color = BLACK;
                     siblings->color = father->color;
                     father->color = BLACK;
-                    LL1(&Root, &Red);
+                    LL1(Root, &Red);
                 }
                 else
                 {//LR
                     Red = siblings->right;
                     Red->color = father->color;
                     father->color = BLACK;
-                    LR1(&Root, &Red);
+                    LR1(Root, &Red);
                 }
             }
             else {//R
@@ -912,14 +958,14 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
                     Red->color = BLACK;
                     siblings->color = father->color;
                     father->color = BLACK;
-                    RR1(&Root, &Red);
+                    RR1(Root, &Red);
                 }
                 else {
                     //RL
                     Red = siblings->left;
                     Red->color = father->color;
                     father->color = BLACK;
-                    RL1(&Root, &Red);
+                    RL1(Root, &Red);
                 }
             }
             if (mark == 1) {
@@ -929,6 +975,7 @@ void Resolve_double_black(RBTree** Root, double_black** Point, int mark)
 
                 free(cur);
             }
+            free(*Point);
             return;
         }
         else {//兄弟是黑节点，但是兄弟没有红孩子->如果只有一个非NULL的黑子节点不可能，结果就是两个NULL
@@ -954,9 +1001,9 @@ RBTreeNode* Find_key(char* key, RBTree* Root)//查找key值所对应的节点坐
 //返回NULL就代表这个红黑树里面没有这个内容
 {
     RBTreeNode* cur = Root->root;
-    while (cur != NULL && !strcmp(cur->key, key))
+    while (cur != NULL && strcmp(cur->key, key)!=0)
     {
-        if (strcmp(cur->key, key))
+        if (strcmp(cur->key, key)>0)
             cur = cur->left;
         else cur = cur->right;
     }
@@ -964,7 +1011,7 @@ RBTreeNode* Find_key(char* key, RBTree* Root)//查找key值所对应的节点坐
 }
 RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
     if (*cur == NULL)
-        return Root;
+        return *Root;
     RBTreeNode* father = (*cur)->parent;
     if (*cur == (*Root)->root) {
         if (!((*cur)->left || (*cur)->right)) {
@@ -1008,12 +1055,12 @@ RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
         if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(&Root, &db, 0);
+            Resolve_double_black(Root, &db, 0);
         }
         else {
             child->color = BLACK;
         }
-        free(cur);
+        free(*cur);
         return (*Root);
     }
     else if ((*cur)->right == NULL && (*cur)->left != NULL) {
@@ -1026,7 +1073,7 @@ RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
         if ((*cur)->color == BLACK && child->color == BLACK) {
             double_black* db = (double_black*)malloc(sizeof(double_black));
             db->point = child;
-            Resolve_double_black(&Root, &db, 0);
+            Resolve_double_black(Root, & db, 0);
         }
         else {
             child->color = BLACK;
@@ -1054,14 +1101,11 @@ RBTree* Delete(RBTreeNode** cur, RBTree** Root) {
         RBTreeNode* alter = (*cur)->left;
         while (alter->right != NULL)
             alter = alter->right;
-        // 不再需要释放 cur->key，因为它是数组
-        // 直接使用 strcpy 复制字符串
         strcpy((*cur)->key, alter->key);
         return Delete(&alter, Root);
     }
     return (*Root);
 }
-
 void Clear_RBTREE(RBTreeNode* root)
 {
     if (root == NULL)
@@ -1106,28 +1150,23 @@ void generateOrderNumber(char* orderNumber) {
 */
 // 出库订单结构体
 HashTable* ht;
-
-
 //------------------------------------------------------------------
-
 typedef struct Shelf {
     char shelf_name;
     RBTree* tree;
     int capacity;
     int current_count;
 } Shelf;
-RBTree* shelf_trace[6];
 // 全局货架数组
 #define SHELF_COUNT 6
 Shelf shelves[SHELF_COUNT];
-
 // 初始化货架
 void init_shelves(void) {
     char shelf_names[7] = { 'A','B','C','D','E','F','\0' };
     for (int i = 0; i < SHELF_COUNT; i++) {
         shelves[i].shelf_name = shelf_names[i];
         shelves[i].tree = (RBTree*)malloc(sizeof(RBTree));
-        shelf_trace[i] = (RBTree*)malloc(sizeof(RBTree));
+       
         shelves[i].tree->root = NULL;
         shelves[i].capacity = 600;
         shelves[i].current_count = 0;
@@ -1148,11 +1187,11 @@ int confirm_outbound(OutboundOrder* order) {
     if (confirm == 'Y' || confirm == 'y') {
         order->outbound_time = time(NULL); // 记录出库时间
         order->status = 1;
-        printf("出库成功"); //
+        printf("出库成功\n"); //
         return 0;
     }
     else {
-        printf("出库取消");
+        printf("出库取消\n");
         return 1;
     }
 }
@@ -1161,7 +1200,7 @@ double get_time_diff(time_t start, time_t end) {
     return difftime(end, start) / 3600.0;
 }
 // 包裹生命周期状态判断
-void Intelligent_schedule(OutboundOrder* order);//智能调度
+void Intelligent_schedule(OutboundOrder** order);//智能调度
 void check_expiration(OutboundOrder* order) {
     time_t now = time(NULL);
     if (order->status == 0) { // 待出库订单
@@ -1222,10 +1261,12 @@ void GenerateOrder(RBTree** Root)
     }
     else {
         printf("未找到该用户\n");
+        return;
     }
     Intelligent_schedule(&ptr);//智能调度
     Add_list(&user->head, &ptr, &user->tail, &user->length);
     printf("\n%s\n%s\n", user->tail->mark, user->tail->data->shelf);
+    user->length++;
     ptr->status = 0;//创建时未出库
     log_operation("入库", ptr->order_id, "管理员");
     FILE* fp = fopen(ptr->phone, "a");
@@ -1247,9 +1288,9 @@ void GenerateOrder(RBTree** Root)
 
 
     if (!(*Root)->root )
-        tmp = newNode(ptr->order_id, Root, ptr,&trace);
+        tmp = newNode(ptr->order_id, Root, ptr);
     else
-        tmp = Add_node(ptr->order_id, Root,ptr,&trace);
+        tmp = Add_node(ptr->order_id, Root,ptr);
 }
 void Intelligent_schedule(OutboundOrder** order)//智能调度
 {
@@ -1269,7 +1310,6 @@ void Intelligent_schedule(OutboundOrder** order)//智能调度
         printf("%c货架已满", ch);
         return;
     }
-
     int i =rand()%600;
     (*order)->shelf[0] = ch;
     while (1) {
@@ -1283,17 +1323,17 @@ void Intelligent_schedule(OutboundOrder** order)//智能调度
         (*order)->shelf[5] = '\0';
         RBTreeNode* tmp;
         if (shelves[k].tree->root == NULL)
-            tmp = newNode((*order)->shelf, &(shelves[k].tree), &order, &(shelf_trace[k]));
+            tmp = newNode((*order)->shelf, &(shelves[k].tree), &order);
         else
-            tmp = Add_node((*order)->shelf, &(shelves[k].tree), &order, &(shelf_trace[k]));
-        if (!tmp)
+            tmp = Add_node((*order)->shelf, &(shelves[k].tree), &order);
+        if (tmp)
         {
             printf("智能调度成功\n");
             break;
         }
         i = rand() % 600;
     }
-    shelves[(*order)->Good->p_type].current_count += 1;
+    shelves[k].current_count += 1;
     if (shelves[(*order)->Good->p_type].current_count > 500)
     {
         printf("货架%c已达阈值\n", ch);
@@ -1320,7 +1360,7 @@ void Pickup(RBTree** Root, int i)//, OutboundOrder** order)
     else {
         printf("未找到该用户\n");
     }
-    if (!user->length)
+    if (user->length<=0)
     {
         printf("没有可取包裹\n");
         return;
@@ -1341,27 +1381,27 @@ void Pickup(RBTree** Root, int i)//, OutboundOrder** order)
             if (k)
                 return;
         }
-        log_operation("出库", order->order_id, order->phone);
-        OutboundOrder* ptr = order;
-        FILE* fp = fopen(ptr->phone, "a");
-        if (!fp)
-        {
-            perror("ERROR!");
-        }
-        fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%ld\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time, ptr->Good->name, ptr->Good->p_type);
-        fclose(fp);
-
-        //删除订单
-        shelves[ptr->status - 'A'].current_count -= 1;
-        list* tmp = Find_char_list(ptr->order_id, user->head);
-        free(order->Good);
-        Delete_list(&tmp, &user->head, &user->tail, &user->length);
-        RBTreeNode* ntmp = Find_key(ptr->phone, *Root);
-        RBTreeNode* ntmp1 = Find_key(ptr->shelf, shelves[ptr->shelf[0] - 'A'].tree);
-        Delete(&ntmp, Root);
-        Delete(&ntmp1, &shelves[ptr->shelf[0] - 'A'].tree);
-        free(ptr);
     }
+    log_operation("出库", order->order_id, order->phone);
+    OutboundOrder* ptr = order;
+    FILE* fp = fopen(ptr->phone, "a");
+    if (!fp)
+    {
+        perror("ERROR!");
+    }
+    fprintf(fp, "手机号为%s\t 订单号为%s\t 出库时间为%ld\t 货物的名字为%s\t 属性为%d\n", ptr->phone, ptr->order_id, ptr->outbound_time, ptr->Good->name, ptr->Good->p_type);
+    fclose(fp);
+    //删除订单
+    shelves[ptr->status - 'A'].current_count -= 1;
+    list* tmp = Find_char_list(ptr->order_id, user->head);
+    free(order->Good);
+    user->length--;
+    Delete_list(&tmp, &user->head, &user->tail, &user->length);
+    RBTreeNode* ntmp = Find_key(ptr->phone, *Root);
+    RBTreeNode* ntmp1 = Find_key(ptr->shelf, shelves[ptr->shelf[0] - 'A'].tree);
+    Delete(&ntmp, Root);
+    Delete(&ntmp1, &shelves[ptr->shelf[0] - 'A'].tree);
+    free(ptr);
 }
 void Inquiry_order(RBTree* Root, char* order_id) {
     RBTreeNode* tmp = Find_key(order_id, Root);
@@ -1377,8 +1417,6 @@ void Inquiry_order(RBTree* Root, char* order_id) {
     else
         printf("货物未出库");
 }
-
-
 void check_all_orders_for_overdue(HashTable* ht) {
     if (ht == NULL) {
         return;
@@ -1414,8 +1452,6 @@ void check_all_orders_for_overdue(HashTable* ht) {
         }
     }
 }
-
-
 //-------------------------------------------------------------
 typedef struct {
     char admin_password[50];  // 存储密码字符串
@@ -1449,8 +1485,6 @@ int load_config(SystemConfig* config) {
     fclose(fp);
     return 1;
 }
-
-
 void save_config(SystemConfig* config) {
     FILE* fp = fopen("config.txt", "w");
     if (!fp) return;
@@ -1460,7 +1494,6 @@ void save_config(SystemConfig* config) {
     fprintf(fp, "staff_pass=%s\n", config->staff_pass);
     fclose(fp);
 }
-
 void init_default_config() {
     SystemConfig default_config = {
        "admin12356",
@@ -1469,7 +1502,6 @@ void init_default_config() {
     };
     save_config(&default_config);
 }
-
 void read_from_file(FILE* load, RBTree** Root) {
     while (1) {
         OutboundOrder* ptr = (OutboundOrder*)malloc(sizeof(OutboundOrder));
@@ -1494,16 +1526,13 @@ void read_from_file(FILE* load, RBTree** Root) {
             free(ptr);
             break;
         }
-
         if (fscanf(load, "%lf", &(ptr->Good->weight)) != 1) {
             free(ptr->Good);
             free(ptr);
             break;
         }
-
         generateOrderNumber(ptr->order_id);
         ptr->create_time = time(NULL);
-
         if (fscanf(load, "%s", ptr->phone) != 1) {
             free(ptr->Good);
             free(ptr);
@@ -1521,8 +1550,9 @@ void read_from_file(FILE* load, RBTree** Root) {
             continue;
         }
         Intelligent_schedule(&ptr);  // 智能调度
+        user->length++;
         Add_list(&user->head, &ptr, &user->tail, &user->length);
-        printf("\n%s\n%s\n", user->tail->mark, user->tail->data->shelf);
+       // printf("\n%s\n%s\n", user->tail->mark, user->tail->data->shelf);
         ptr->status = 0;  // 创建时未出库
         log_operation("入库", ptr->order_id, "管理员");
         FILE* fp = fopen(ptr->phone, "a");
@@ -1549,144 +1579,132 @@ void read_from_file(FILE* load, RBTree** Root) {
             fclose(fp);
         }
         RBTreeNode* tmp;
-        printf("%s %d %s \n", user->tail->data->order_id, user->length, user->tail->data->shelf);
+  //      printf("%s %d %s \n", user->tail->data->order_id, user->length, user->tail->data->shelf);
         RBTree* tmp1 = *Root;
         if (!tmp1->root)
-            tmp = newNode(ptr->order_id, Root, &ptr,&trace);
+            tmp = newNode(ptr->order_id, Root, &ptr);
         else
-            tmp = Add_node(ptr->order_id, Root, &ptr,&trace);
+            tmp = Add_node(ptr->order_id, Root, &ptr);
     }
-    Pre_order((*Root)->root);
 }
-
-
 void displayMenu(void);
 void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int* x);
 void adminInterface(RBTree* Root, SystemConfig* sys_config);
 void printAllOrders(RBTree* Root);
 void registerUser(HashTable* ht);
-
 // 显示菜单
 void displayMenu(void) {
     printf("\n快递管理系统菜单:\n");
-    printf("1. 员工登陆(创建新订单)(取件（不需要输入密码）)(汇报货物异常情况)\n");
-    printf("2. 用户取件   (如有多件待取物品请多次操作)\n");
-    printf("3. 查找用户\n");
-    printf("4. 管理员模式(改变员工/管理员密码)(查看货架属性)(遍历货物链表，货架链表)(查看货物情况)\n");
-    printf("5. 注册用户\n");
-    printf("6. 用户登录(查询包裹异常信息)(取件（需要输入密码）)\n");
-    printf("7. 退出\n");
+    printf("1. 员工登陆(创建新订单)(取件)(汇报货物异常情况)\n");
+ //printf("2. 用户取件   (如有多件待取物品请多次操作)\n");
+ //printf("3. 查找用户\n");
+    printf("2. 管理员模式(改变员工/管理员密码)(查看货架属性)(遍历货物链表，货架链表)(查看货物情况)\n");
+    printf("3. 注册用户\n");
+    printf("4. 用户登录(查询包裹异常信息)(取件)\n");
+    printf("5. 退出\n");
     printf("请输入你的选择: \n");
 }
-
-
 // 处理用户输入
 void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int* x) {
     int choice;
     scanf("%d", &choice);
     getchar(); // 消耗掉换行符
-
+    char phone[20];
+    char mima[20];
+    char package_id[40];
     switch (choice) {
     case 1:
         printf("请输入员工密码: ");
         char password[50];
         scanf_s("%s", password, sizeof(password));
         getchar(); // 消耗掉换行符
-
         if (strcmp(password, sys_config->staff_pass) == 0) {
+            int num = 1;
             printf("密码正确，进入员工模式\n");
-            printf("1. 创建新订单\n");
-            printf("2. 取件\n");
-            printf("3. 货物异常情况登记\n");
-            printf("请输入你的选择\n");
-            int n;
-            scanf_s("%d", &n);
-            getchar();
-            switch (n) {
-            case 1:
-                GenerateOrder(Root);
-                break;
-            case 2:
-                Pickup(Root, 1);
-                break;
-            case 3:
-                printf("请输入异常包裹的订单号\n");
-                char order_id[20];
-                scanf_s("%s", order_id, sizeof(order_id));
-                getchar();
-                printf("\n设置包裹异常属性:\n");
-                printf("1. 丢失\n");
-                printf("2. 损坏\n");
-                printf("3. 超期滞留\n");
-                printf("4. 信息错误\n");
-                printf("输入你的选择\n");
+            while (num) {
+                printf("1. 创建新订单\n");
+                printf("2. 取件\n");
+                printf("3. 货物异常情况登记\n");
+                printf("4. 退出员工界面\n");
+                printf("请输入你的选择\n");
                 int n;
                 scanf_s("%d", &n);
                 getchar();
-                const char* type_str;
-                switch (n - 1) {
-                case LOST:
-                    type_str = "丢失";
+                switch (n) {
+                case 1:
+                    GenerateOrder(Root);
                     break;
-                case DAMAGED:
-                    type_str = "损坏";
+                case 2:
+                    Pickup(Root, 1);
                     break;
-                case OVERDUE_STAY:
-                    type_str = "超期滞留";
+                case 3:
+                    printf("请输入异常包裹的订单号\n");
+                    char order_id[20];
+                    scanf_s("%s", order_id, sizeof(order_id));
+                    getchar();
+                    printf("\n设置包裹异常属性:\n");
+                    printf("1. 丢失\n");
+                    printf("2. 损坏\n");
+                    printf("3. 超期滞留\n");
+                    printf("4. 信息错误\n");
+                    printf("输入你的选择\n");
+                    int n;
+                    scanf_s("%d", &n);
+                    getchar();
+                    const char* type_str;
+                    switch (n - 1) {
+                    case LOST:
+                        type_str = "丢失";
+                        break;
+                    case DAMAGED:
+                        type_str = "损坏";
+                        break;
+                    case OVERDUE_STAY:
+                        type_str = "超期滞留";
+                        break;
+                    case INFORMATION_ERROR:
+                        type_str = "信息错误";
+                        break;
+                    default:
+                        type_str = "未知异常";
+                        break;
+                    }
+                    PackageException exception = {
+                    n - 1,
+                    time(NULL),
+                    order_id
+                    };
+                    printf("请输出异常描述\n");
+                    scanf_s("%s", exception.description, sizeof(exception.description));
+                    getchar();
+                    log_exception(&exception);
+                    printf("包裹异常属性设置完成\n");
                     break;
-                case INFORMATION_ERROR:
-                    type_str = "信息错误";
+                case 4:
+                    printf("已退出员工界面\n");
+                    num = 0;
                     break;
                 default:
-                    type_str = "未知异常";
-                    break;
+                    printf("输入不合法,请重新输入\n");
                 }
-                PackageException exception = {
-                n - 1,
-                time(NULL),
-                order_id
-                };
-                printf("请输出异常描述\n");
-                scanf_s("%s", exception.description, sizeof(exception.description));
-                getchar();
-                log_exception(&exception);
-                printf("包裹异常属性设置完成\n");
-            break;            default:
-                printf("输入不合法\n");
-                break;
             }
+        }
+        else
+        {
+            printf("密码错误\n");
+        }
             break;
-    case 2: {
-        Pickup(Root, 0);
-        break;
-    }
-    case 3: {
-        char phone[20];
-        printf("请输入要查找的手机号: ");
-        scanf("%s", phone);
-        User* user = hash_search(ht, phone);
-        if (user) {
-            printf("找到用户：%s，手机号：%s\n", user->name, user->tel);
-        }
-        else {
-            printf("未找到该用户\n");
-        }
-        break;
-    }
-    case 4:
+    case 2:
         adminInterface(*Root, sys_config);
         break;
-    case 7:
+    case 5:
         printf("退出系统\n");
         (*x) = 0;
         break;
-    case 5:
+    case 3:
         registerUser(ht);
         break;
-    case 6: {
-        char phone[20];
-        char mima[20];
-        char package_id[40];
+    case 4: 
         printf("请输入用户的手机号: ");
         scanf("%s", phone);
         User* user = hash_search(ht, phone);
@@ -1695,16 +1713,6 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
         }
         else {
             printf("输入错误或没有进行注册\n");
-            break;
-        }
-        printf("请输入密码\n");
-        scanf_s("%s", mima, sizeof(mima));
-        if (!strcmp(mima, user->mima))
-        {
-            printf("\n登陆成功\n");
-        }
-        else {
-            printf("密码输入错误\n");
             break;
         }
         printf("1. 查询包裹异常信息\n");
@@ -1737,20 +1745,12 @@ void handleUserInput(RBTree** Root, HashTable* ht, SystemConfig* sys_config, int
             Pickup(Root, 0);
             break;
         }
-
         break;
-    }
-
     default:
         printf("无效的选择，请重新输入\n");
-        }
-        else printf("密码错误");
     }
 }
-
-
-
-// 管理员接口
+//管理员接口
 // 查看各货架属性
 void viewShelfAttributes() {
     for (int i = 0; i < SHELF_COUNT; i++) {
@@ -1759,7 +1759,6 @@ void viewShelfAttributes() {
         printf("  当前数量：%d\n", shelves[i].current_count);
     }
 }
-
 // 遍历特定货架的树
 void traverseShelfTree(char shelf_name) {
     int index = shelf_name - 'A';
@@ -1777,14 +1776,13 @@ void traverseShelfTree(char shelf_name) {
         printf("无效的货架名称\n");
     }
 }
-
 // 管理员接口
 void adminInterface(RBTree* Root, SystemConfig* sys_config) {
     char password[50];
     printf("请输入管理员密码: ");
     scanf_s("%s", password, sizeof(password));
     getchar(); // 消耗掉换行符
-
+    char package_id[20];
     if (strcmp(password, sys_config->admin_password) == 0) {
         printf("密码正确，进入管理员模式\n");
         int choice;
@@ -1794,8 +1792,8 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
             printf("2. 查看各货架属性\n");
             printf("3. 遍历特定货架的树\n");
             printf("4. 重新设置管理员密码\n");
-            printf("5. 设置包裹异常属性\n");
-            printf("6. 重新设置员工密码");
+            printf("5. 重新设置员工密码\n");
+            printf("6. 设置包裹异常属性\n");
             printf("7. 查看日志\n");
             printf("8. 退出管理员模式\n");
             printf("请输入你的选择: \n");
@@ -1828,7 +1826,7 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 save_config(sys_config);
 
                 break;
-            case 5:
+            case 6:
                 printf("请输入异常包裹的订单号\n");
                 char order_id[20];
                 scanf_s("%s", order_id, sizeof(order_id));
@@ -1872,7 +1870,7 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
                 log_exception(&exception);
                 printf("包裹异常属性设置完成\n");
                 break;
-            case 6:
+            case 5:
                 printf("请输入新密码");
                 char newpassword1[50];
 
@@ -1882,6 +1880,33 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
 
                 save_config(sys_config);
             case 7:
+                printf("1. 输入手机号查询对应货物操作日志\n");
+                printf("2. 输入订单号查询包裹异常记录\n");
+                printf("3. 退出日志查询界面\n");
+                printf("请输入你的选择\n");
+                int xuanze;
+                int xuanzede = 1;
+                scanf_s("%d",&xuanze);
+                getchar();
+                while(xuanzede)
+                switch (xuanze)
+                {case 1:
+                    /*
+                    */
+                    break;
+                case 2:
+                    printf("请输入要查询的订单编号: ");
+                    scanf_s("%s", package_id, sizeof(package_id));
+                    query_package_exceptions(package_id);
+                    break;
+                case 3:
+                    printf("退出日志查询界面\n");
+                    xuanzede = 0;
+                    break;
+                default:
+                    printf("输入不合法，请重新输入\n");
+                    break;
+                }
                 /*
                     查看日志
                 */
@@ -1898,7 +1923,6 @@ void adminInterface(RBTree* Root, SystemConfig* sys_config) {
         printf("密码错误，无法进入管理员模式\n");
     }
 }
-
 // 打印所有订单
 void printAllOrders(RBTree* Root) {
     if (Root->root == NULL) {
@@ -1909,7 +1933,6 @@ void printAllOrders(RBTree* Root) {
     In_order(Root->root);
     printf("\n");
 }
-
 // 注册用户
 void registerUser(HashTable* ht) {
     char phone[20];
@@ -1949,7 +1972,6 @@ void registerUser(HashTable* ht) {
     hash_insert(ht, phone, name, mima, (UserType)userType);
     printf("用户注册成功\n");
 }
-
 void query_package_exceptions(const char* package_id) {
     FILE* log_file = fopen("exception.log", "r");
     if (log_file == NULL)
