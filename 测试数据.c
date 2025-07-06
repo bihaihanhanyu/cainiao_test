@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -36,7 +35,7 @@ void generate_password(char* password) {
 
 // 生成用户注册数据
 void generate_user_registration_data(char phones[GROUP_COUNT][20]) {
-    FILE* fp = fopen("user_registration_data.txt", "w");
+    FILE* fp = fopen("user_registration.txt", "wt");
     if (fp == NULL) {
         perror("Failed to open file");
         return;
@@ -45,15 +44,13 @@ void generate_user_registration_data(char phones[GROUP_COUNT][20]) {
     for (int i = 0; i < GROUP_COUNT; i++) {
         char name[30];
         char mima[20];
-        char check_mima[20];
         int userType = rand() % 5;
 
         generate_phone_number(phones[i]);
         generate_random_word(name);
         generate_password(mima);
-        strcpy(check_mima, mima);
 
-        fprintf(fp, "%s %s %s %s %d\n", phones[i], name, mima, check_mima, userType);
+        fprintf(fp, "%s %s %s %d\n", phones[i], name, mima, userType);
     }
 
     fclose(fp);
@@ -61,7 +58,7 @@ void generate_user_registration_data(char phones[GROUP_COUNT][20]) {
 
 // 生成 read_from_file 需要的数据
 void generate_read_from_file_data(char phones[GROUP_COUNT][20]) {
-    FILE* fp = fopen("read_from_file_data.txt", "w");
+    FILE* fp = fopen("test.txt", "wt");
     if (fp == NULL) {
         perror("Failed to open file");
         return;
@@ -71,10 +68,11 @@ void generate_read_from_file_data(char phones[GROUP_COUNT][20]) {
         char goods_name[MAX_WORD_LENGTH];
         int goods_type = rand() % 5;
         float goods_weight = (float)(rand() % 1000) / 10.0; // 0 - 100.0
+        float price = (float)(rand() % 10) + (float)(rand() % 100) / 100.0;
 
         generate_random_word(goods_name);
 
-        fprintf(fp, "%s %d %.1f %s\n", goods_name, goods_type, goods_weight, phones[i]);
+        fprintf(fp, "%s %d %.1f %.2f %s\n", goods_name, goods_type, goods_weight, price, phones[i]);
     }
 
     fclose(fp);
